@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  ai-friendbot-db:
+    container_name: ai-friendbot-db
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DB}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3307:3306"
+    volumes:
+      - friendbot_mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  comfyui:
+    build:
+      context: ./ComfyUI
+      dockerfile: Dockerfile
+    ports:
+      - "8188:8188"
+    volumes:
+      - ./comfyui_data:/app/ComfyUI/output
+    networks:
+      - app-network
+
+  backend:
+    container_name: ai-friendbot-backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      MYSQL_HOSTNAME: ${MYSQL_HOSTNAME}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DB: ${MYSQL_DB}
+      MYSQL_PORT: ${MYSQL_PORT}
+      SECRET_KEY: ${SECRET_KEY}
+      API_BASE_URL: ${API_BASE_URL_DOCKER}
+      LM_STUDIO_API_URL: ${LM_STUDIO_API_URL}
+      COMFYUI_BASE_URL: http://comfyui:8188
+      RUNNING_IN_DOCKER: "true"
+    depends_on:
+      ai-friendbot-db:
+        condition: service_healthy
+    networks:
+      - app-network
+    command: >
+      sh -c "
+        echo 'Waiting for MySQL to be ready...'
+        while ! mysqladmin ping -h ai-friendbot-db --silent; do
+          sleep 1
+        done
+        echo 'MySQL is ready'
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+      
+  frontend:
+    container_name: ai-friendbot-frontend
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+volumes:
+  friendbot_mysql_data:
+  comfyui_data:
+
+networks:
+  app-network:
+    driver: bridge
