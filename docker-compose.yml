@@ -1,17 +1,17 @@
 version: '3.8'
 
 services:
-  ai-friendbot-db:
-    container_name: ai-friendbot-db
+  ai-friend-db:
+    container_name: ai-friend-db
     image: mysql:8.0
     environment:
       MYSQL_DATABASE: ${MYSQL_DB}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3307:3306"
+      - "3320:3306"
     volumes:
-      - friendbot_mysql_data:/var/lib/mysql
+      - friend_mysql_data:/var/lib/mysql
     networks:
       - app-network
     healthcheck:
@@ -31,7 +31,7 @@ services:
       - app-network
 
   backend:
-    container_name: ai-friendbot-backend
+    container_name: ai-friend-backend
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -50,14 +50,14 @@ services:
       COMFYUI_BASE_URL: http://comfyui:8188
       RUNNING_IN_DOCKER: "true"
     depends_on:
-      ai-friendbot-db:
+      ai-friend-db:
         condition: service_healthy
     networks:
       - app-network
     command: >
       sh -c "
         echo 'Waiting for MySQL to be ready...'
-        while ! mysqladmin ping -h ai-friendbot-db --silent; do
+        while ! mysqladmin ping -h ai-friend-db --silent; do
           sleep 1
         done
         echo 'MySQL is ready'
@@ -65,19 +65,19 @@ services:
       "
       
   frontend:
-    container_name: ai-friendbot-frontend
+    container_name: ai-friend-frontend
     build:
       context: .
       dockerfile: frontend/Dockerfile
     ports:
-      - "8080:80"
+      - "8081:81"
     depends_on:
       - backend
     networks:
       - app-network
 
 volumes:
-  friendbot_mysql_data:
+  friend_mysql_data:
   comfyui_data:
 
 networks:

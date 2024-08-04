@@ -13,17 +13,17 @@ logger = logging.getLogger(__name__)
 logger.debug(f"Loading .env from {dotenv_path}")
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "AI Friendbot API"
+    PROJECT_NAME: str = "AI Friend API"
     API_V1_STR: str = "/api/v1"
-    ALLOWED_ORIGINS: list = ["http://localhost:8080"]
+    ALLOWED_ORIGINS: list = ["http://localhost:8081"]
 
     api_base_url: str = os.getenv("LM_STUDIO_API_URL", "http://localhost:1234/v1")
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "mysql+pymysql://root:letmein@ai-friendbot-db:3306/ai-friendbot-db")
-    MYSQL_HOSTNAME: str = os.getenv("MYSQL_HOSTNAME", "ai-friendbot-db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "mysql+pymysql://root:letmein@ai-friend-db:3307/ai-friend-db")
+    MYSQL_HOSTNAME: str = os.getenv("MYSQL_HOSTNAME", "ai-friend-db")
     MYSQL_USER: str = os.getenv("MYSQL_USER", "root")
     MYSQL_PASSWORD: str = os.getenv("MYSQL_PASSWORD", "letmein")
-    MYSQL_DB: str = os.getenv("MYSQL_DB", "ai-friendbot-db")
-    MYSQL_PORT: int = int(os.getenv("MYSQL_PORT", 3306))
+    MYSQL_DB: str = os.getenv("MYSQL_DB", "ai-friend-db")
+    MYSQL_PORT: int = int(os.getenv("MYSQL_PORT", 3307))
     SECRET_KEY: str = os.getenv("SECRET_KEY", "b'uW\xf9{\xe3\xc3\xad\xc9[\xa1\xe0\xa5\x1d\xd1\x92\x02^-\x07\x9f=\xd3N\xe0\xaf\x92>f\xe5\xfc\xee#'")
 
     ALGORITHM: str = "HS256"

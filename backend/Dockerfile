@@ -12,22 +12,22 @@ ENV PYTHONPATH="/app:${PYTHONPATH}"
 
 # Install system dependencies including MySQL client
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        software-properties-common \
-        curl \
-        mysql-client
+    software-properties-common \
+    curl \
+    mysql-client
 
 # Add the deadsnakes PPA for newer Python versions
 RUN add-apt-repository ppa:deadsnakes/ppa
 
 # Install Python 3.10 and other necessary packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        python3.10 \
-        python3.10-venv \
-        python3.10-dev \
-        python3-pip \
-        libffi-dev \
-        libssl-dev \
-        tzdata
+    python3.10 \
+    python3.10-venv \
+    python3.10-dev \
+    python3-pip \
+    libffi-dev \
+    libssl-dev \
+    tzdata
 
 # Update alternatives to prioritize Python 3.10
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 \
@@ -75,4 +75,4 @@ COPY .env /app/.env
 EXPOSE 8000
 
 # Run the wait script and the application with uvicorn
-CMD ["sh", "-c", "/app/wait-for-db.sh ai-friendbot-db && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
+CMD ["sh", "-c", "/app/wait-for-db.sh ai-friend-db && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
