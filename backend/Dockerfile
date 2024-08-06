@@ -1,5 +1,5 @@
 # Use an official Python runtime as a base image with CUDA support
-FROM nvidia/cuda:11.8.0-base-ubuntu20.04
+FROM nvidia/cuda:12.0.0-runtime-ubuntu22.04
 
 # Set the working directory in the container to /app
 WORKDIR /app
@@ -51,8 +51,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install MySQL client
 RUN apt-get update && apt-get install -y default-mysql-client
 
-# Install PyTorch with CUDA
-RUN pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu118
+# Update this line to use cuda11.8 instead of cu118
+RUN pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu120
 
 # Install NLTK and download the required resources
 RUN pip install nltk && \

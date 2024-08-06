@@ -27,6 +27,13 @@ services:
       - "8188:8188"
     volumes:
       - ./comfyui_data:/app/ComfyUI/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     networks:
       - app-network
 
@@ -54,6 +61,14 @@ services:
         condition: service_healthy
     networks:
       - app-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+  
     command: >
       sh -c "
         echo 'Waiting for MySQL to be ready...'
