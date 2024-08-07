@@ -59,6 +59,8 @@ services:
     depends_on:
       ai-friend-db:
         condition: service_healthy
+      comfyui:
+        condition: service_started  
     networks:
       - app-network
     deploy:

@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 context_manager = ChatContextManager()
-comfy_ui_service = ComfyUIService(base_url=settings.COMFYUI_BASE_URL)
+comfy_ui_service = ComfyUIService()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

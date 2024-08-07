@@ -3,10 +3,9 @@
 import asyncio
 import os
 from app.services.ai.comfy_ui_service import ComfyUIService
-from app.core.config import settings
 
-
-comfy_ui_service = ComfyUIService()
+def get_comfy_ui_service():
+    return ComfyUIService()
 
 async def get_prediction(input_text: str):
     # Assuming the backend directory is structured correctly under the project root
@@ -27,6 +26,3 @@ async def get_prediction(input_text: str):
         error_msg = stderr.decode()
         print(f"Error running lm_client.ts: {error_msg}")
         return None
-
-def get_comfy_ui_service():
-    return ComfyUIService(settings.COMFYUI_BASE_URL)

@@ -71,6 +71,12 @@ COPY backend/ /app/
 # Copy the .env file into the container at /app
 COPY .env /app/.env
 
+# Clear Python's cache
+RUN find /app -name '*.pyc' -delete || true && find /app -name '__pycache__' -delete || true
+
+# List contents for debugging
+RUN ls -R /app
+
 # Expose port 8000 for the application
 EXPOSE 8000
 

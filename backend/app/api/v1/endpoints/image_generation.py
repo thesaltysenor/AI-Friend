@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, WebSocket
 from app.services.ai.comfy_ui_service import ComfyUIService
 from app.core.dependencies import get_comfy_ui_service
-from app.schemas import ImageGenerationRequest, ImageGenerationResponse, ImageRetrievalResponse, WSMessage
+from app.schemas.schemas import ImageGenerationRequest, ImageGenerationResponse, ImageRetrievalResponse, WSMessage
 import base64
 
 router = APIRouter()
@@ -11,16 +11,17 @@ router = APIRouter()
 @router.post("/generate", response_model=ImageGenerationResponse)
 async def generate_image(
     request: ImageGenerationRequest,
-    comfy_ui: ComfyUIService = Depends(get_comfy_ui_service)
+    comfy_ui = Depends(get_comfy_ui_service)
 ):
     try:
-        prompt_id = await comfy_ui.generate_image(request.prompt, request.ai_personality_id)
+        prompt_id = await comfy_ui.generate_image(request.prompt)
         return ImageGenerationResponse(
             prompt_id=prompt_id,
             message=f"Image generation started for prompt: '{request.prompt}'"
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to start image generation: {str(e)}")
+
 
 @router.get("/{prompt_id}", response_model=ImageRetrievalResponse)
 async def get_image(prompt_id: str, comfy_ui: ComfyUIService = Depends(get_comfy_ui_service)):

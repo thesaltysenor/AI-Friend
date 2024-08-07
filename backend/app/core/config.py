@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # ComfyUI settings
-    COMFYUI_BASE_URL: str = "http://localhost:8188"
+    COMFYUI_BASE_URL: str = os.getenv("COMFYUI_BASE_URL", "http://comfyui:8188")
     COMFYUI_CHECKPOINT: str = "v1-5-pruned.ckpt"
     COMFYUI_NEGATIVE_PROMPT: str = "bad, unrealistic"
     COMFYUI_STEPS: int = 20
