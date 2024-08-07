@@ -87,7 +87,7 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
     ports:
-      - "8081:81"
+      - "8081:80"
     depends_on:
       - backend
     networks:
