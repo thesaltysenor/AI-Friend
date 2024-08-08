@@ -1,4 +1,5 @@
 import logging
+from typing import Callable
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.endpoints import ai_personality
@@ -6,12 +7,13 @@ from app.core.config import settings
 from app.services.chat.context_manager import ChatContextManager
 from app.services.background_tasks import start_background_tasks
 from contextlib import asynccontextmanager
-from app.services.db.session import engine
-from app.services.db.base import Base
+from app.services.db.database import create_tables_function as create_tables
 import nltk
 from app.api.v1.endpoints import auth, chat, models, image_generation
 from app.services.db.ai_personality_manager import AIPersonalityManager
 from app.services.ai.comfy_ui_service import ComfyUIService
+
+create_tables: Callable[[], None] = create_tables
 
 try:
     nltk.data.find('stopwords')
@@ -29,7 +31,7 @@ async def lifespan(app: FastAPI):
     logger.debug("Starting application lifespan.")
     # Create database tables
     try:
-        Base.metadata.create_all(bind=engine)
+        create_tables()
         logger.debug("Tables created successfully.")
     except Exception as e:
         logger.error(f"Error creating tables: {e}")

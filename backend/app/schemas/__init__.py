@@ -29,7 +29,11 @@ from .schemas import (
     SessionUpdate,
     UserPreferenceCreate,
     UserPreferenceRead,
-    UserPreferenceUpdate
+    UserPreferenceUpdate,
+    ImageGenerationRequest,
+    ImageGenerationResponse,
+    ImageRetrievalResponse,
+    WSMessage
 )
 
 __all__ = [
@@ -63,5 +67,9 @@ __all__ = [
     "SessionUpdate",
     "UserPreferenceCreate",
     "UserPreferenceRead",
-    "UserPreferenceUpdate"
+    "UserPreferenceUpdate",
+    "ImageGenerationRequest",
+    "ImageGenerationResponse",
+    "ImageRetrievalResponse",
+    "WSMessage"
 ]

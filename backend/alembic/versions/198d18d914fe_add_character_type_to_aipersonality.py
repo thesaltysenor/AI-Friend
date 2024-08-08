@@ -113,7 +113,21 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_feedback_id'), 'feedback', ['id'], unique=False)
-    # ### end Alembic commands ###
+   
+    op.create_table('generated_images',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('prompt', sa.String(length=255), nullable=True),
+        sa.Column('prompt_id', sa.String(length=255), nullable=True),
+        sa.Column('image_url', sa.String(length=255), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=True),
+        sa.Column('user_id', sa.Integer(), nullable=True),
+        sa.Column('ai_personality_id', sa.Integer(), nullable=True),
+        sa.ForeignKeyConstraint(['ai_personality_id'], ['ai_personality.id'], ),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+        sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_generated_images_prompt'), 'generated_images', ['prompt'], unique=False)
+    op.create_index(op.f('ix_generated_images_prompt_id'), 'generated_images', ['prompt_id'], unique=True)
 
 
 def downgrade() -> None:
@@ -141,4 +155,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_ai_personality_name'), table_name='ai_personality')
     op.drop_index(op.f('ix_ai_personality_id'), table_name='ai_personality')
     op.drop_table('ai_personality')
-    # ### end Alembic commands ###
+    op.drop_index(op.f('ix_generated_images_prompt_id'), table_name='generated_images')
+    op.drop_index(op.f('ix_generated_images_prompt'), table_name='generated_images')
+    op.drop_table('generated_images')
+

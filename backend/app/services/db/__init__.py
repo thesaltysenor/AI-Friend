@@ -6,7 +6,7 @@ from .message_manager import MessageManager
 from .session_manager import SessionManager
 from .user_preference_manager import UserPreferenceManager
 from .database import create_tables, get_db
-
+from .image_service import ImageService
 __all__ = [
     "AIPersonalityManager",
     "EntityManager",
@@ -16,5 +16,6 @@ __all__ = [
     "SessionManager",
     "UserPreferenceManager",
     "create_tables",
-    "get_db"
+    "get_db",
+    "ImageService"
 ]

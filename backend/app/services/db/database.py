@@ -1,6 +1,11 @@
 import pymysql
 import logging
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
+
+engine = create_engine(settings.DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_db_connection():
     return pymysql.connect(
@@ -18,7 +23,10 @@ def get_db():
     finally:
         db.close()
 
-def create_tables():
+def create_tables() -> None:
+    """
+    Create database tables if they don't exist.
+    """
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
@@ -135,3 +143,4 @@ def create_tables():
         logging.error(f"Error creating tables: {e}")
     finally:
         connection.close()
+create_tables_function = create_tables

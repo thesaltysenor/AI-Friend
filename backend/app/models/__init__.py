@@ -8,6 +8,7 @@ from .entity import Entity
 from .feedback import Feedback
 from .session import Session
 from .user_preference import UserPreference
+from .image import GeneratedImage
 
 def init_models():
     # This function doesn't need to do anything, 
@@ -15,4 +16,4 @@ def init_models():
     pass
 
 # This ensures all models are registered with Base.metadata
-__all__ = ["Base", "User", "AIPersonality", "Message", "Intent", "Interaction", "Entity", "Feedback", "Session", "UserPreference", "init_models"]
+__all__ = ["Base", "User", "AIPersonality", "Message", "GeneratedImage", "Intent", "Interaction", "Entity", "Feedback", "Session", "UserPreference", "init_models"]
