@@ -1,19 +1,21 @@
 import logging
-from typing import Callable
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from app.api.v1.endpoints import ai_personality
 from app.core.config import settings
 from app.services.chat.context_manager import ChatContextManager
 from app.services.background_tasks import start_background_tasks
 from contextlib import asynccontextmanager
-from app.services.db.database import create_tables_function as create_tables
+from app.services.db.database import create_tables, engine
+from sqlalchemy.orm import sessionmaker
 import nltk
 from app.api.v1.endpoints import auth, chat, models, image_generation
 from app.services.db.ai_personality_manager import AIPersonalityManager
 from app.services.ai.comfy_ui_service import ComfyUIService
 
-create_tables: Callable[[], None] = create_tables
+# Create SQLAlchemy SessionLocal
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 try:
     nltk.data.find('stopwords')
@@ -29,6 +31,17 @@ comfy_ui_service = ComfyUIService()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.debug("Starting application lifespan.")
+    
+    # Test database connection
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(text("SELECT 1"))
+            logger.debug(f"Database connection test result: {result.fetchone()}")
+        logger.debug("Database connection test successful.")
+    except Exception as e:
+        logger.error(f"Database connection test failed: {e}")
+        raise  # Re-raise the exception to prevent the application from starting with a bad DB connection
+
     # Create database tables
     try:
         create_tables()
@@ -38,12 +51,15 @@ async def lifespan(app: FastAPI):
     
     # Populate characters
     try:
-        ai_personality_manager = AIPersonalityManager()
+        db = SessionLocal()
+        ai_personality_manager = AIPersonalityManager(db)
         ai_personality_manager.populate_characters()
         ai_personality_manager.get_or_create_default_ai_personality()
         logger.debug("Characters populated successfully.")
     except Exception as e:
         logger.error(f"Error during startup: {e}")
+    finally:
+        db.close()
     
     # Connect to ComfyUI
     try:

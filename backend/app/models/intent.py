@@ -1,7 +1,7 @@
 # app/models/intent.py
 from sqlalchemy import Column, Integer, String, Text
 from sqlalchemy.orm import relationship
-from app.services.db.base import Base
+from app.services.db.database import Base
 
 class Intent(Base):
     __tablename__ = "intent"

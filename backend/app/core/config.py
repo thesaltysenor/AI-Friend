@@ -18,10 +18,11 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: list = ["http://localhost:8081"]
 
     api_base_url: str = os.getenv("LM_STUDIO_API_URL", "http://localhost:1234/v1")
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "mysql+pymysql://root:letmein@ai-friend-db:3306/ai-friend-db")
     MYSQL_HOSTNAME: str = os.getenv("MYSQL_HOSTNAME", "ai-friend-db")
-    MYSQL_USER: str = os.getenv("MYSQL_ROOT_USER", "root")
-    MYSQL_PASSWORD: str = os.getenv("MYSQL_ROOT_PASSWORD")
+    MYSQL_USER: str = os.getenv("MYSQL_USER", "root")
+    MYSQL_ROOT_USER: str = os.getenv("MYSQL_ROOT_USER", "root")
+    MYSQL_ROOT_PASSWORD: str = os.getenv("MYSQL_ROOT_PASSWORD", "letmein")
+    MYSQL_PASSWORD: str = os.getenv("MYSQL_PASSWORD", "letmein")
     MYSQL_DB: str = os.getenv("MYSQL_DB", "ai-friend-db")
     MYSQL_PORT: int = int(os.getenv("MYSQL_PORT", 3306))
     SECRET_KEY: str = os.getenv("SECRET_KEY", "b'uW\xf9{\xe3\xc3\xad\xc9[\xa1\xe0\xa5\x1d\xd1\x92\x02^-\x07\x9f=\xd3N\xe0\xaf\x92>f\xe5\xfc\xee#'")
@@ -49,11 +50,12 @@ class Settings(BaseSettings):
         extra = "allow"
 
     @property
-    def get_database_url(self):
+    def DATABASE_URL(self):
         if os.getenv("RUNNING_IN_DOCKER") == "true":
             return f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@{self.MYSQL_HOSTNAME}:{self.MYSQL_PORT}/{self.MYSQL_DB}"
         else:
-            return f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@localhost:{self.MYSQL_PORT}/{self.MYSQL_DB}"
+            # Use localhost and the mapped port when running locally
+            return f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@localhost:3320/{self.MYSQL_DB}"
 
 settings = Settings()
-logger.debug(f"Settings loaded: API_BASE_URL={settings.api_base_url}, DATABASE_URL={settings.get_database_url}")
+logger.debug(f"Settings loaded: API_BASE_URL={settings.api_base_url}, DATABASE_URL={settings.DATABASE_URL}")

@@ -2,7 +2,7 @@
 
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from app.services.db.base import Base
+from app.services.db.database import Base
 import datetime
 
 class GeneratedImage(Base):

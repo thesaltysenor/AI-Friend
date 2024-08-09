@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.schemas.schemas import UserCreate, Token
 from app.services.user.user_manager import UserManager
-from app.services.db.session import get_db
+from app.services.db.database import get_db
 from datetime import timedelta
 from app.core.config import settings
 

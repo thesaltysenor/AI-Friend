@@ -1,4 +1,4 @@
-from app.services.db.base import Base
+from app.services.db.database import Base
 from .user import User
 from .ai_personality import AIPersonality
 from .messages import Message

@@ -1,8 +1,7 @@
 # app/models/messages.py
-import time
-from sqlalchemy import JSON, Column, Integer, String, Float, ForeignKey
+from sqlalchemy import JSON, Column, DateTime, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import relationship
-from app.services.db.base import Base
+from app.services.db.database import Base
 
 class Message(Base):
     __tablename__ = "messages"
@@ -10,9 +9,9 @@ class Message(Base):
     id = Column(Integer, primary_key=True, index=True)
     role = Column(String(50))
     content = Column(String(2000))
-    timestamp: float = time.time()
+    timestamp = Column(DateTime, index=True)
     relevance = Column(Float, default=1.0)
-    user_id = Column(String(36), ForeignKey('users.user_id'))
+    user_id = Column(String(36), ForeignKey('users.user_id'), index=True)
     adaptive_traits = Column(JSON, nullable=True)
     
     user = relationship("User", back_populates="messages")

@@ -1,7 +1,7 @@
 # app/models/entity.py
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
-from app.services.db.base import Base
+from app.services.db.database import Base
 
 class Entity(Base):
     __tablename__ = "entity"

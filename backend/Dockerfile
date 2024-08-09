@@ -10,11 +10,15 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Set the PYTHONPATH to include the /app directory
 ENV PYTHONPATH="/app:${PYTHONPATH}"
 
-# Install system dependencies including MySQL client
+# Install system dependencies including MySQL client and development libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
     software-properties-common \
     curl \
-    mysql-client
+    mysql-client \
+    libmysqlclient-dev \
+    pkg-config \
+    default-libmysqlclient-dev \
+    build-essential
 
 # Add the deadsnakes PPA for newer Python versions
 RUN add-apt-repository ppa:deadsnakes/ppa
@@ -45,11 +49,15 @@ RUN echo "Etc/UTC" > /etc/timezone && \
 # Copy the requirements file into the container at /app
 COPY requirements.txt /app/
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Set environment variables for MySQL
+ENV MYSQLCLIENT_CFLAGS="-I/usr/include/mysql"
+ENV MYSQLCLIENT_LDFLAGS="-L/usr/lib/x86_64-linux-gnu -lmysqlclient"
 
-# Install MySQL client
-RUN apt-get update && apt-get install -y default-mysql-client
+# Upgrade pip and install wheel
+RUN pip install --upgrade pip setuptools wheel
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt -v
 
 # Update this line to use cuda11.8 instead of cu118
 RUN pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu120
