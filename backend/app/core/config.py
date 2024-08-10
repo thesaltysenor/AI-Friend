@@ -17,7 +17,8 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     ALLOWED_ORIGINS: list = ["http://localhost:8081"]
 
-    api_base_url: str = os.getenv("LM_STUDIO_API_URL", "http://localhost:1234/v1")
+    API_BASE_URL: str = os.getenv("API_BASE_URL", "http://localhost:1234/v1")
+    API_BASE_URL_DOCKER: str = os.getenv("API_BASE_URL_DOCKER", "http://host.docker.internal:1234/v1")    
     MYSQL_HOSTNAME: str = os.getenv("MYSQL_HOSTNAME", "ai-friend-db")
     MYSQL_USER: str = os.getenv("MYSQL_USER", "root")
     MYSQL_ROOT_USER: str = os.getenv("MYSQL_ROOT_USER", "root")
@@ -52,10 +53,16 @@ class Settings(BaseSettings):
     @property
     def DATABASE_URL(self):
         if os.getenv("RUNNING_IN_DOCKER") == "true":
-            return f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@{self.MYSQL_HOSTNAME}:{self.MYSQL_PORT}/{self.MYSQL_DB}"
+            return os.getenv("DATABASE_URL_DOCKER")
         else:
-            # Use localhost and the mapped port when running locally
-            return f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@localhost:3320/{self.MYSQL_DB}"
+            return os.getenv("DATABASE_URL", f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@localhost:3320/{self.MYSQL_DB}")
 
+    @property
+    def api_base_url(self):
+        if os.getenv("RUNNING_IN_DOCKER") == "true":
+            return self.API_BASE_URL_DOCKER
+        else:
+            return self.API_BASE_URL
+        
 settings = Settings()
 logger.debug(f"Settings loaded: API_BASE_URL={settings.api_base_url}, DATABASE_URL={settings.DATABASE_URL}")

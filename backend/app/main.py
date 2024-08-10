@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
     # Populate characters
     try:
         db = SessionLocal()
-        ai_personality_manager = AIPersonalityManager(db)
+        ai_personality_manager = AIPersonalityManager()
         ai_personality_manager.populate_characters()
         ai_personality_manager.get_or_create_default_ai_personality()
         logger.debug("Characters populated successfully.")

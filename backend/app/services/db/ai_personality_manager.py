@@ -30,7 +30,7 @@ class AIPersonalityManager:
     def create_ai_personality(self, name: str, description: str, personality_traits: str, character_type: str = "default", available: bool = True) -> Optional[AIPersonality]:
         try:
             with self.conn.cursor() as cursor:
-                sql = "INSERT INTO ai_personality (name, description, personality_traits, character_type, available) VALUES (%s, %s, %s, %s, %s)"
+                sql = "INSERT INTO ai_personalities (name, description, personality_traits, character_type, available) VALUES (%s, %s, %s, %s, %s)"
                 cursor.execute(sql, (name, description, personality_traits, character_type, available))
                 self.conn.commit()
                 ai_personality_id = cursor.lastrowid
@@ -43,7 +43,7 @@ class AIPersonalityManager:
     def get_ai_personality_by_id(self, ai_personality_id: int) -> Optional[AIPersonality]:
         try:
             with self.conn.cursor() as cursor:
-                sql = "SELECT id, name, description, personality_traits, character_type, available FROM ai_personality WHERE id = %s"
+                sql = "SELECT id, name, description, personality_traits, character_type, available FROM ai_personalities WHERE id = %s"
                 cursor.execute(sql, (ai_personality_id,))
                 result = cursor.fetchone()
                 if result:
@@ -77,7 +77,7 @@ class AIPersonalityManager:
                     update_values.append(available)
 
                 if update_fields:
-                    sql = "UPDATE ai_personality SET " + ", ".join(update_fields) + " WHERE id = %s"
+                    sql = "UPDATE ai_personalities SET " + ", ".join(update_fields) + " WHERE id = %s"
                     update_values.append(ai_personality_id)
                     cursor.execute(sql, update_values)
                     self.conn.commit()
@@ -91,19 +91,19 @@ class AIPersonalityManager:
     def delete_ai_personality(self, ai_personality_id: int) -> bool:
         try:
             with self.conn.cursor() as cursor:
-                sql = "DELETE FROM ai_personality WHERE id = %s"
+                sql = "DELETE FROM ai_personalities WHERE id = %s"
                 cursor.execute(sql, (ai_personality_id,))
                 self.conn.commit()
                 return True
         except pymysql.Error as e:
-            logging.error(f"Error deleting AI Personality: {str(e)}")
+            logging.error(f"Error deleting AI Personalities: {str(e)}")
             self.conn.rollback()
             return False
         
     def get_all_ai_personalities(self) -> List[AIPersonality]:
         try:
             with self.conn.cursor() as cursor:
-                sql = "SELECT id, name, description, personality_traits, character_type, available FROM ai_personality"
+                sql = "SELECT id, name, description, personality_traits, character_type, available FROM ai_personalities"
                 cursor.execute(sql)
                 results = cursor.fetchall()
                 return [AIPersonality(
@@ -121,7 +121,7 @@ class AIPersonalityManager:
     def get_default_personality(self):
         try:
             with self.conn.cursor() as cursor:
-                sql = "SELECT id, name, description, personality_traits, character_type, available FROM ai_personality LIMIT 1"
+                sql = "SELECT id, name, description, personality_traits, character_type, available FROM ai_personalities LIMIT 1"
                 cursor.execute(sql)
                 result = cursor.fetchone()
                 if result:
@@ -143,14 +143,14 @@ class AIPersonalityManager:
         try:
             with self.conn.cursor() as cursor:
                 # Check if the character already exists
-                sql_check = "SELECT id FROM ai_personality WHERE character_type = %s"
+                sql_check = "SELECT id FROM ai_personalities WHERE character_type = %s"
                 cursor.execute(sql_check, (character_type,))
                 result = cursor.fetchone()
 
                 if result:
                     # Update existing character
                     sql = """
-                    UPDATE ai_personality 
+                    UPDATE ai_personalities 
                     SET name = %s, description = %s, personality_traits = %s, available = %s
                     WHERE character_type = %s
                     """
@@ -164,7 +164,7 @@ class AIPersonalityManager:
                 else:
                     # Insert new character
                     sql = """
-                    INSERT INTO ai_personality (name, description, personality_traits, character_type, available)
+                    INSERT INTO ai_personalities (name, description, personality_traits, character_type, available)
                     VALUES (%s, %s, %s, %s, %s)
                     """
                     cursor.execute(sql, (
@@ -189,7 +189,7 @@ class AIPersonalityManager:
         try:
             with self.conn.cursor() as cursor:
                 # Check if default Adaptive AI Friend exists
-                sql = "SELECT id FROM ai_personality WHERE LOWER(character_type) = 'adaptive' LIMIT 1"
+                sql = "SELECT id FROM ai_personalities WHERE LOWER(character_type) = 'adaptive' LIMIT 1"
                 cursor.execute(sql)
                 result = cursor.fetchone()
                 
@@ -198,7 +198,7 @@ class AIPersonalityManager:
                 else:
                     # Create default Adaptive AI Friend
                     sql = """
-                    INSERT INTO ai_personality 
+                    INSERT INTO ai_personalities 
                     (name, description, personality_traits, character_type, available) 
                     VALUES (%s, %s, %s, %s, %s)
                     """

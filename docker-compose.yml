@@ -44,7 +44,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${DATABASE_URL_DOCKER}
       MYSQL_HOSTNAME: ${MYSQL_HOSTNAME}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
@@ -79,6 +79,7 @@ services:
         echo 'MySQL is ready'
         uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
       "
+
       
   frontend:
     container_name: ai-friend-frontend
