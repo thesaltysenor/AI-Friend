@@ -8,7 +8,7 @@ class Feedback(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String(36), ForeignKey('users.user_id'))
-    session_id = Column(Integer, ForeignKey('sessions.id'))
+    session_id = Column(Integer, ForeignKey('session.id'))
     message_id = Column(Integer, ForeignKey('messages.id'))
     rating = Column(Integer)
 
