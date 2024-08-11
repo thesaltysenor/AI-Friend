@@ -1,33 +1,33 @@
 # app/services/ai/comfy_ui_service.py
 
 import aiohttp
+from urllib.parse import urljoin
 from typing import AsyncGenerator, Dict, Any
 from app.core.config import settings
 
 class ComfyUIService:
     def __init__(self):
         self.base_url = settings.COMFYUI_BASE_URL
-        self.session = None
 
-    async def connect(self):
-        self.session = aiohttp.ClientSession()
-
-    async def disconnect(self):
-        if self.session:
-            await self.session.close()
+    def _get_safe_url(self, path: str) -> str:
+        return urljoin(self.base_url, path)
 
     async def generate_image(self, prompt: str) -> str:
+        url = self._get_safe_url("prompt")
         comfy_prompt = await self.create_image_generation_prompt(prompt)
-        async with self.session.post(f"{self.base_url}/prompt", json=comfy_prompt) as response:
+        async with self.session.post(url, json=comfy_prompt) as response:
             data = await response.json()
             return data['prompt_id']
 
     async def get_image(self, prompt_id: str) -> bytes:
-        async with self.session.get(f"{self.base_url}/view?filename={prompt_id}") as response:
+        url = self._get_safe_url("view")
+        params = {"filename": prompt_id}
+        async with self.session.get(url, params=params) as response:
             return await response.read()
 
     async def listen_for_updates(self) -> AsyncGenerator[Dict[str, Any], None]:
-        async with self.session.ws_connect(f"{self.base_url}/ws") as ws:
+        ws_url = self._get_safe_url("ws")
+        async with self.session.ws_connect(ws_url) as ws:
             async for msg in ws:
                 if msg.type == aiohttp.WSMsgType.TEXT:
                     yield msg.json()

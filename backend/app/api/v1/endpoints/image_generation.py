@@ -5,19 +5,21 @@ from app.services.ai.comfy_ui_service import ComfyUIService
 from app.core.dependencies import get_comfy_ui_service
 from app.schemas.schemas import ImageGenerationRequest, ImageGenerationResponse, ImageRetrievalResponse, WSMessage
 import base64
+from app.utils.input_validation import sanitize_prompt
 
 router = APIRouter()
 
 @router.post("/generate", response_model=ImageGenerationResponse)
 async def generate_image(
     request: ImageGenerationRequest,
-    comfy_ui = Depends(get_comfy_ui_service)
+    comfy_ui: ComfyUIService = Depends(get_comfy_ui_service)
 ):
     try:
-        prompt_id = await comfy_ui.generate_image(request.prompt)
+        sanitized_prompt = sanitize_prompt(request.prompt)
+        prompt_id = await comfy_ui.generate_image(sanitized_prompt)
         return ImageGenerationResponse(
             prompt_id=prompt_id,
-            message=f"Image generation started for prompt: '{request.prompt}'"
+            message=f"Image generation started for prompt: '{sanitized_prompt}'"
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to start image generation: {str(e)}")

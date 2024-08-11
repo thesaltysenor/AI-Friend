@@ -3,9 +3,9 @@ FROM nvidia/cuda:12.0.0-runtime-ubuntu22.04
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
+    git \
     python3 \
     python3-pip \
-    git \
     && rm -rf /var/lib/apt/lists/* \
     && git clone https://github.com/comfyanonymous/ComfyUI.git \
     && cd ComfyUI \

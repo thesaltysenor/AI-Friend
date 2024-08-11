@@ -13,30 +13,31 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # Copy all necessary files at once
 COPY requirements.txt backend/wait-for-db.sh backend/ .env ./
 
+# Add get-pip.py using ADD instruction
+ADD https://bootstrap.pypa.io/get-pip.py /tmp/get-pip.py
+
 # Install system dependencies, Python, set up the environment, and install Python packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    software-properties-common \
-    curl \
-    mysql-client \
-    libmysqlclient-dev \
-    pkg-config \
-    default-libmysqlclient-dev \
     build-essential \
+    default-libmysqlclient-dev \
     libffi-dev \
+    libmysqlclient-dev \
     libssl-dev \
+    mysql-client \
+    pkg-config \
+    software-properties-common \
     tzdata \
     && add-apt-repository ppa:deadsnakes/ppa \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
-    python3.10 \
-    python3.10-venv \
-    python3.10-dev \
     python3-pip \
+    python3.10 \
+    python3.10-dev \
+    python3.10-venv \
     && update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 \
-    && curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py \
-    && python3.10 get-pip.py \
-    && rm get-pip.py \
+    && python3.10 /tmp/get-pip.py \
+    && rm /tmp/get-pip.py \
     && echo "Etc/UTC" > /etc/timezone \
     && dpkg-reconfigure -f noninteractive tzdata \
     && pip install --upgrade pip setuptools wheel \
