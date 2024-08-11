@@ -13,7 +13,7 @@ class LMStudioClient:
         self._client_created = client is None
         if self._client_created:
             self.client = httpx.AsyncClient(
-                base_url=settings.api_base_url,
+                base_url=settings.get_current_api_base_url,
                 timeout=httpx.Timeout(300.0, connect=60.0)
             )
 

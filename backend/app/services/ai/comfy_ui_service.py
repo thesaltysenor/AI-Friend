@@ -8,11 +8,21 @@ from app.core.config import settings
 class ComfyUIService:
     def __init__(self):
         self.base_url = settings.COMFYUI_BASE_URL
+        self.session = None
+
+    async def connect(self):
+        if self.session is None or self.session.closed:
+            self.session = aiohttp.ClientSession()
+
+    async def disconnect(self):
+        if self.session and not self.session.closed:
+            await self.session.close()
 
     def _get_safe_url(self, path: str) -> str:
         return urljoin(self.base_url, path)
 
     async def generate_image(self, prompt: str) -> str:
+        await self.connect()  # Ensure we have an active session
         url = self._get_safe_url("prompt")
         comfy_prompt = await self.create_image_generation_prompt(prompt)
         async with self.session.post(url, json=comfy_prompt) as response:
@@ -20,12 +30,14 @@ class ComfyUIService:
             return data['prompt_id']
 
     async def get_image(self, prompt_id: str) -> bytes:
+        await self.connect()  # Ensure we have an active session
         url = self._get_safe_url("view")
         params = {"filename": prompt_id}
         async with self.session.get(url, params=params) as response:
             return await response.read()
 
     async def listen_for_updates(self) -> AsyncGenerator[Dict[str, Any], None]:
+        await self.connect()  # Ensure we have an active session
         ws_url = self._get_safe_url("ws")
         async with self.session.ws_connect(ws_url) as ws:
             async for msg in ws:
