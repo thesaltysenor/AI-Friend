@@ -17,118 +17,146 @@ down_revision: Union[str, None] = '2eba091a54ca'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
+USERS_USER_ID = 'users.user_id'
 
 def upgrade() -> None:
     bind = op.get_bind()
     inspector = inspect(bind)
 
-    # Ensure the user_id column in sessions matches the user_id type in users
-    # Drop the existing foreign key constraint first
+    update_sessions_table(inspector)
+    update_generated_images_table(inspector)
+    update_ai_personalities_table(inspector)
+    update_entity_table(inspector)
+    update_feedback_table(inspector)
+    update_intent_table(inspector)
+    update_interaction_table(inspector)
+    update_messages_table(inspector)
+    update_sessions_table_indexes(inspector)
+    update_user_preferences_table(inspector)
+    update_users_table(inspector)
+
+def update_sessions_table(inspector):
     fk_constraints = [fk['name'] for fk in inspector.get_foreign_keys('sessions')]
     if 'sessions_ibfk_1' in fk_constraints:
         op.drop_constraint('sessions_ibfk_1', 'sessions', type_='foreignkey')
-
-    # Modify the user_id column in the sessions table to match the user_id column in the users table
     op.alter_column('sessions', 'user_id',
                     existing_type=mysql.INTEGER(),
-                    type_=sa.String(length=36),  # Make sure this matches the type and length in the users table
+                    type_=sa.String(length=36),
                     existing_nullable=True)
-
-    # Recreate the foreign key constraint with the correct column types
     op.create_foreign_key('sessions_ibfk_1', 'sessions', 'users', ['user_id'], ['user_id'])
 
-    # Continue with other schema changes...
+def update_generated_images_table(inspector):
     existing_indexes = [index['name'] for index in inspector.get_indexes('generated_images')]
+    drop_existing_indexes(existing_indexes, 'generated_images')
+    create_new_indexes(existing_indexes, 'generated_images')
 
-    # Only drop the 'prompt_id' index if it exists
+def drop_existing_indexes(existing_indexes, table_name):
     if 'prompt_id' in existing_indexes:
-        op.drop_index('prompt_id', table_name='generated_images')
-
+        op.drop_index('prompt_id', table_name=table_name)
     if 'prompt_id_2' in existing_indexes:
-        op.drop_index('prompt_id_2', table_name='generated_images')
+        op.drop_index('prompt_id_2', table_name=table_name)
 
-    # Create indexes if they don't exist
-    if 'ix_generated_images_id' not in existing_indexes:
-        op.create_index('ix_generated_images_id', 'generated_images', ['id'], unique=False)
+def create_new_indexes(existing_indexes, table_name):
+    new_indexes = [
+        ('ix_generated_images_id', ['id'], False),
+        ('ix_generated_images_prompt', ['prompt'], False),
+        ('ix_generated_images_prompt_id', ['prompt_id'], True)
+    ]
+    for index_name, columns, unique in new_indexes:
+        if index_name not in existing_indexes:
+            op.create_index(index_name, table_name, columns, unique=unique)
 
-    if 'ix_generated_images_prompt' not in existing_indexes:
-        op.create_index('ix_generated_images_prompt', 'generated_images', ['prompt'], unique=False)
-
-    if 'ix_generated_images_prompt_id' not in existing_indexes:
-        op.create_index('ix_generated_images_prompt_id', 'generated_images', ['prompt_id'], unique=True)
-
-    if 'ix_generated_images_prompt_id' not in existing_indexes:
-        op.create_index('ix_generated_images_prompt_id', 'generated_images', ['prompt_id'], unique=True)
+def update_ai_personalities_table(inspector):
     if not any(idx['name'] == 'ix_ai_personalities_id' for idx in inspector.get_indexes('ai_personalities')):
         op.create_index('ix_ai_personalities_id', 'ai_personalities', ['id'], unique=False)
 
-    if not any(idx['name'] == 'ix_entity_entity_name' for idx in inspector.get_indexes('entity')):
-        op.create_index('ix_entity_entity_name', 'entity', ['entity_name'], unique=False)
-
-    if not any(idx['name'] == 'ix_entity_id' for idx in inspector.get_indexes('entity')):
-        op.create_index('ix_entity_id', 'entity', ['id'], unique=False)
-
+def update_entity_table(inspector):
+    create_entity_indexes(inspector)
     op.alter_column('entity', 'entity_name',
                     existing_type=mysql.VARCHAR(length=255),
                     type_=sa.String(length=100),
                     existing_nullable=True)
 
+def create_entity_indexes(inspector):
+    entity_indexes = [
+        ('ix_entity_entity_name', ['entity_name'], False),
+        ('ix_entity_id', ['id'], False)
+    ]
+    for index_name, columns, unique in entity_indexes:
+        if not any(idx['name'] == index_name for idx in inspector.get_indexes('entity')):
+            op.create_index(index_name, 'entity', columns, unique=unique)
+
+def update_feedback_table(inspector):
     if not any(idx['name'] == 'ix_feedback_id' for idx in inspector.get_indexes('feedback')):
         op.create_index('ix_feedback_id', 'feedback', ['id'], unique=False)
-
     op.alter_column('feedback', 'message_id',
                     existing_type=mysql.VARCHAR(length=36),
                     type_=sa.Integer(),
                     existing_nullable=True)
 
+def update_intent_table(inspector):
     op.alter_column('intent', 'intent_name',
                     existing_type=mysql.VARCHAR(length=255),
                     type_=sa.String(length=100),
                     existing_nullable=True)
+    create_intent_indexes(inspector)
 
-    if not any(idx['name'] == 'ix_intent_id' for idx in inspector.get_indexes('intent')):
-        op.create_index('ix_intent_id', 'intent', ['id'], unique=False)
+def create_intent_indexes(inspector):
+    intent_indexes = [
+        ('ix_intent_id', ['id'], False),
+        ('ix_intent_intent_name', ['intent_name'], False)
+    ]
+    for index_name, columns, unique in intent_indexes:
+        if not any(idx['name'] == index_name for idx in inspector.get_indexes('intent')):
+            op.create_index(index_name, 'intent', columns, unique=unique)
 
-    if not any(idx['name'] == 'ix_intent_intent_name' for idx in inspector.get_indexes('intent')):
-        op.create_index('ix_intent_intent_name', 'intent', ['intent_name'], unique=False)
-
+def update_interaction_table(inspector):
     if not any(idx['name'] == 'ix_interaction_id' for idx in inspector.get_indexes('interaction')):
         op.create_index('ix_interaction_id', 'interaction', ['id'], unique=False)
 
+def update_messages_table(inspector):
     op.alter_column('messages', 'timestamp',
                     existing_type=mysql.FLOAT(),
                     type_=sa.DateTime(),
                     existing_nullable=True)
+    create_messages_indexes(inspector)
 
-    if not any(idx['name'] == 'ix_messages_id' for idx in inspector.get_indexes('messages')):
-        op.create_index('ix_messages_id', 'messages', ['id'], unique=False)
+def create_messages_indexes(inspector):
+    messages_indexes = [
+        ('ix_messages_id', ['id'], False),
+        ('ix_messages_timestamp', ['timestamp'], False),
+        ('ix_messages_user_id', ['user_id'], False)
+    ]
+    for index_name, columns, unique in messages_indexes:
+        if not any(idx['name'] == index_name for idx in inspector.get_indexes('messages')):
+            op.create_index(index_name, 'messages', columns, unique=unique)
 
-    if not any(idx['name'] == 'ix_messages_timestamp' for idx in inspector.get_indexes('messages')):
-        op.create_index('ix_messages_timestamp', 'messages', ['timestamp'], unique=False)
-
-    if not any(idx['name'] == 'ix_messages_user_id' for idx in inspector.get_indexes('messages')):
-        op.create_index('ix_messages_user_id', 'messages', ['user_id'], unique=False)
-
+def update_sessions_table_indexes(inspector):
     if not any(idx['name'] == 'ix_sessions_id' for idx in inspector.get_indexes('sessions')):
         op.create_index('ix_sessions_id', 'sessions', ['id'], unique=False)
 
+def update_user_preferences_table(inspector):
     if not any(idx['name'] == 'ix_user_preferences_id' for idx in inspector.get_indexes('user_preferences')):
         op.create_index('ix_user_preferences_id', 'user_preferences', ['id'], unique=False)
 
+def update_users_table(inspector):
     op.drop_index('email', table_name='users')
     op.drop_index('username', table_name='users')
+    create_users_indexes(inspector)
 
-    if not any(idx['name'] == 'ix_users_email' for idx in inspector.get_indexes('users')):
-        op.create_index('ix_users_email', 'users', ['email'], unique=True)
-
-    if not any(idx['name'] == 'ix_users_id' for idx in inspector.get_indexes('users')):
-        op.create_index('ix_users_id', 'users', ['id'], unique=False)
-
-    if not any(idx['name'] == 'ix_users_username' for idx in inspector.get_indexes('users')):
-        op.create_index('ix_users_username', 'users', ['username'], unique=True)
-
+def create_users_indexes(inspector):
+    users_indexes = [
+        ('ix_users_email', ['email'], True),
+        ('ix_users_id', ['id'], False),
+        ('ix_users_username', ['username'], True)
+    ]
+    for index_name, columns, unique in users_indexes:
+        if not any(idx['name'] == index_name for idx in inspector.get_indexes('users')):
+            op.create_index(index_name, 'users', columns, unique=unique)
 
 def downgrade() -> None:
+    # The downgrade function remains the same as in your original file
+    # You may want to refactor it similarly to reduce complexity if needed
     bind = op.get_bind()
     inspector = inspect(bind)
 

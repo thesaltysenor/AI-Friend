@@ -5,7 +5,7 @@ from app.services.db.database import Base
 from datetime import datetime
 
 class Session(Base):
-    __tablename__ = "sessions"  # Changed from "session" to "sessions"
+    __tablename__ = "session"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String(36), ForeignKey('users.user_id'))
