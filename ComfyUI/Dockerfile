@@ -6,13 +6,12 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     git \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN git clone https://github.com/comfyanonymous/ComfyUI.git
+    && rm -rf /var/lib/apt/lists/* \
+    && git clone https://github.com/comfyanonymous/ComfyUI.git \
+    && cd ComfyUI \
+    && pip3 install --no-cache-dir -r requirements.txt
 
 WORKDIR /app/ComfyUI
-
-RUN pip3 install --no-cache-dir -r requirements.txt
 
 EXPOSE 8188
 

@@ -26,18 +26,18 @@ class LMStudioClient:
             response = await self.client.get("/models")
             response.raise_for_status()
             data = response.json()
-            logging.debug(f"LM Studio API response: {data}")  # Add this line
+            logging.debug(f"LM Studio API response: {data}")
             return data
         except Exception as e:
             logging.error(f"An unexpected error occurred: {e}")
-        raise
+            raise
 
     async def create_chat_completion(self, messages: List[Union[ChatInputMessage, dict]], model: str, temperature: float, max_tokens: int, stream: bool = False) -> Message:
         payload = {
             "model": model,
             "messages": [
                 {"role": message.role, "content": message.content} if isinstance(message, ChatInputMessage) else message
-            for message in messages
+                for message in messages
             ],
             "temperature": temperature,
             "max_tokens": max_tokens,
@@ -58,15 +58,17 @@ class LMStudioClient:
                     relevance=1.0
                 )
             else:
-                raise Exception("Unexpected response format")
+                raise ValueError("Unexpected response format: missing or empty choices")
         except httpx.HTTPStatusError as e:
             logging.error(f"HTTP status error occurred: {e.response.text}")
             raise
         except httpx.RequestError as e:
             logging.error(f"Request failed: {e}")
             raise
+        except ValueError as e:
+            logging.error(f"Unexpected response format: {e}")
+            raise
         except Exception as e:
             logging.error(f"An unexpected error occurred: {e}")
             raise
-
    

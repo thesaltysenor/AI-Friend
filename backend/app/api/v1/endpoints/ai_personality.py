@@ -8,6 +8,9 @@ from app.services.characters.character_details import CHARACTER_DETAILS
 router = APIRouter()
 ai_personality_manager = AIPersonalityManager()
 
+# Define the constant for the error message
+AI_PERSONALITY_NOT_FOUND = "AI Personality not found"
+
 @router.post("", response_model=AIPersonalityRead)
 def create_ai_personality(ai_personality: AIPersonalityCreate):
     created_ai_personality = ai_personality_manager.create_ai_personality(
@@ -28,7 +31,7 @@ def get_ai_personality(ai_personality_id: int):
     if ai_personality:
         return ai_personality
     else:
-        raise HTTPException(status_code=404, detail="AI Personality not found")
+        raise HTTPException(status_code=404, detail=AI_PERSONALITY_NOT_FOUND)
 
 @router.put("/{ai_personality_id}", response_model=AIPersonalityRead)
 def update_ai_personality(ai_personality_id: int, ai_personality_update: AIPersonalityUpdate):
@@ -43,7 +46,7 @@ def update_ai_personality(ai_personality_id: int, ai_personality_update: AIPerso
     if updated_ai_personality:
         return updated_ai_personality
     else:
-        raise HTTPException(status_code=404, detail="AI Personality not found")
+        raise HTTPException(status_code=404, detail=AI_PERSONALITY_NOT_FOUND)
 
 @router.delete("/{ai_personality_id}")
 def delete_ai_personality(ai_personality_id: int):
@@ -51,8 +54,8 @@ def delete_ai_personality(ai_personality_id: int):
     if deleted:
         return {"message": "AI Personality deleted successfully"}
     else:
-        raise HTTPException(status_code=404, detail="AI Personality not found")
-    
+        raise HTTPException(status_code=404, detail=AI_PERSONALITY_NOT_FOUND)
+
 @router.get("", response_model=List[AIPersonalityRead])
 def get_all_ai_personalities():
     ai_personalities = ai_personality_manager.get_all_ai_personalities()

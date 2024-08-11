@@ -5,6 +5,9 @@ from app.services.db.feedback_manager import FeedbackManager
 router = APIRouter()
 feedback_manager = FeedbackManager()
 
+# Define the constant for the error message
+FEEDBACK_NOT_FOUND = "Feedback not found"
+
 @router.post("", response_model=FeedbackRead)
 def create_feedback(feedback: FeedbackCreate):
     created_feedback = feedback_manager.create_feedback(feedback.user_id, feedback.session_id, feedback.message_id, feedback.rating)
@@ -19,7 +22,7 @@ def get_feedback(feedback_id: int):
     if feedback:
         return feedback
     else:
-        raise HTTPException(status_code=404, detail="Feedback not found")
+        raise HTTPException(status_code=404, detail=FEEDBACK_NOT_FOUND)
 
 @router.put("/{feedback_id}", response_model=FeedbackRead)
 def update_feedback(feedback_id: int, feedback_update: FeedbackUpdate):
@@ -27,7 +30,7 @@ def update_feedback(feedback_id: int, feedback_update: FeedbackUpdate):
     if updated_feedback:
         return updated_feedback
     else:
-        raise HTTPException(status_code=404, detail="Feedback not found")
+        raise HTTPException(status_code=404, detail=FEEDBACK_NOT_FOUND)
 
 @router.delete("/{feedback_id}")
 def delete_feedback(feedback_id: int):
@@ -35,4 +38,4 @@ def delete_feedback(feedback_id: int):
     if deleted:
         return {"message": "Feedback deleted successfully"}
     else:
-        raise HTTPException(status_code=404, detail="Feedback not found")
+        raise HTTPException(status_code=404, detail=FEEDBACK_NOT_FOUND)

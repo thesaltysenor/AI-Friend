@@ -2,7 +2,7 @@
 
 import logging
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import pymysql
 from app.core.config import settings
 from app.models.session import Session
@@ -24,7 +24,7 @@ class SessionManager:
     def create_session(self, user_id: int, status: str) -> Optional[Session]:
         try:
             with self.conn.cursor() as cursor:
-                start_time = datetime.utcnow()
+                start_time = datetime.now(timezone.utc)
                 sql = "INSERT INTO sessions (user_id, start_time, status) VALUES (%s, %s, %s)"
                 cursor.execute(sql, (user_id, start_time, status))
                 self.conn.commit()

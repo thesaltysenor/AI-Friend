@@ -18,6 +18,7 @@ lm_client = LMStudioClient()
 context_manager = ChatContextManager()
 small_talk_module = SmallTalkModule()
 interaction_manager = InteractionManager()
+GENERATE_IMAGE = "generate image"
 
 @router.post("/completions")
 async def chat_endpoint(chat_input: ChatInput, comfy_ui: ComfyUIService = Depends(get_comfy_ui_service)):
@@ -47,14 +48,14 @@ async def chat_endpoint(chat_input: ChatInput, comfy_ui: ComfyUIService = Depend
         ai_personality = AIPersonality(ai_personality_id)
 
         # Check if the message is requesting image generation
-        if "generate image" in user_message.lower():
+        if GENERATE_IMAGE in user_message.lower():
             image_prompt = extract_image_prompt(user_message)
             try:
                 prompt_id = await comfy_ui.generate_image(image_prompt)
                 generated_response = f"I'm generating an image for you based on: '{image_prompt}'. You can retrieve the image using this ID: {prompt_id}"
             except Exception as e:
-                logging.error(f"Failed to generate image: {str(e)}")
-                generated_response = "I'm sorry, but I couldn't generate the image at this time. Can I help you with anything else?"
+                logging.error(f"Failed to {GENERATE_IMAGE}: {str(e)}")
+                generated_response = f"I'm sorry, but I couldn't {GENERATE_IMAGE} at this time. Can I help you with anything else?"
         else:
             # Existing chat logic
             if small_talk_module.is_small_talk(user_message):
@@ -102,9 +103,6 @@ async def chat_endpoint(chat_input: ChatInput, comfy_ui: ComfyUIService = Depend
     except Exception as e:
         logging.error(f"API call failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"API call failed: {e}")
-    
-def extract_image_prompt(message: str) -> str:
-    return message.lower().replace("generate image", "").strip()
     
 def extract_image_prompt(message: str) -> str:
     return message.lower().replace("generate image", "").strip()

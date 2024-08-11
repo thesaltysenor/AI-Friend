@@ -5,13 +5,12 @@ import uuid
 import bcrypt
 import logging
 from typing import Optional, List, Union
-from datetime import datetime
+from datetime import datetime, timezone
 import pymysql
 import sqlite3
 from app.core.config import settings
 from app.models.interaction import Interaction
 from app.services.db.ai_personality_manager import AIPersonalityManager
-
 
 class InteractionManager:
     def __init__(self, connection=None):
@@ -55,7 +54,7 @@ class InteractionManager:
 
                 # Proceed with creating the interaction
                 sql = "INSERT INTO interaction (user_id, ai_personality_id, interaction_type, timestamp) VALUES (%s, %s, %s, %s)"
-                timestamp = datetime.utcnow()
+                timestamp = datetime.now(timezone.utc)
                 cursor.execute(sql, (user_id, ai_personality_id, interaction_type, timestamp))
                 self.conn.commit()
                 interaction_id = cursor.lastrowid

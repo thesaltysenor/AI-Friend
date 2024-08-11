@@ -7,6 +7,9 @@ from app.services.user.user_manager import UserManager
 router = APIRouter()
 user_manager = UserManager()
 
+# Define the constant for the error message
+USER_NOT_FOUND = "User not found"
+
 @router.get("/me", response_model=UserRead)
 def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
@@ -17,7 +20,7 @@ def get_user(user_id: str, current_user: User = Depends(get_current_user)):
     if user:
         return user
     else:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail=USER_NOT_FOUND)
 
 @router.put("/{user_id}", response_model=UserRead)
 def update_user(user_id: str, user_update: UserCreate, current_user: User = Depends(get_current_user)):
@@ -27,7 +30,7 @@ def update_user(user_id: str, user_update: UserCreate, current_user: User = Depe
     if updated_user:
         return updated_user
     else:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail=USER_NOT_FOUND)
 
 @router.delete("/{user_id}")
 def delete_user(user_id: str, current_user: User = Depends(get_current_user)):
@@ -37,4 +40,4 @@ def delete_user(user_id: str, current_user: User = Depends(get_current_user)):
     if deleted:
         return {"message": "User deleted successfully"}
     else:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail=USER_NOT_FOUND)

@@ -58,11 +58,11 @@ class Settings(BaseSettings):
             return os.getenv("DATABASE_URL", f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@localhost:3320/{self.MYSQL_DB}")
 
     @property
-    def api_base_url(self):
+    def get_current_api_base_url(self):
         if os.getenv("RUNNING_IN_DOCKER") == "true":
             return self.API_BASE_URL_DOCKER
         else:
             return self.API_BASE_URL
         
 settings = Settings()
-logger.debug(f"Settings loaded: API_BASE_URL={settings.api_base_url}, DATABASE_URL={settings.DATABASE_URL}")
+logger.debug(f"Settings loaded: API_BASE_URL={settings.get_current_api_base_url}, DATABASE_URL={settings.DATABASE_URL}")

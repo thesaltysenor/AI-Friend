@@ -5,6 +5,9 @@ from app.services.db.session_manager import SessionManager
 router = APIRouter()
 session_manager = SessionManager()
 
+# Define the constant for the error message
+SESSION_NOT_FOUND = "Session not found"
+
 @router.post("", response_model=SessionRead)
 def create_session(session: SessionCreate):
     created_session = session_manager.create_session(session.user_id, session.status)
@@ -19,7 +22,7 @@ def get_session(session_id: int):
     if session:
         return session
     else:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail=SESSION_NOT_FOUND)
 
 @router.put("/{session_id}", response_model=SessionRead)
 def update_session(session_id: int, session_update: SessionUpdate):
@@ -27,7 +30,7 @@ def update_session(session_id: int, session_update: SessionUpdate):
     if updated_session:
         return updated_session
     else:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail=SESSION_NOT_FOUND)
 
 @router.delete("/{session_id}")
 def delete_session(session_id: int):
@@ -35,4 +38,4 @@ def delete_session(session_id: int):
     if deleted:
         return {"message": "Session deleted successfully"}
     else:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail=SESSION_NOT_FOUND)

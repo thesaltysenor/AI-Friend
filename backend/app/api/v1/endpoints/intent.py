@@ -9,6 +9,9 @@ router = APIRouter()
 intent_manager = IntentManager()
 intent_recognizer = IntentRecognizer()
 
+# Define the constant for the error message
+INTENT_NOT_FOUND = "Intent not found"
+
 @router.post("", response_model=IntentRead)
 def create_intent(intent: IntentCreate):
     created_intent = intent_manager.create_intent(
@@ -26,7 +29,7 @@ def get_intent(intent_id: int):
     if intent:
         return intent
     else:
-        raise HTTPException(status_code=404, detail="Intent not found")
+        raise HTTPException(status_code=404, detail=INTENT_NOT_FOUND)
 
 @router.put("/{intent_id}", response_model=IntentRead)
 def update_intent(intent_id: int, intent_update: IntentUpdate):
@@ -38,7 +41,7 @@ def update_intent(intent_id: int, intent_update: IntentUpdate):
     if updated_intent:
         return updated_intent
     else:
-        raise HTTPException(status_code=404, detail="Intent not found")
+        raise HTTPException(status_code=404, detail=INTENT_NOT_FOUND)
 
 @router.delete("/{intent_id}")
 def delete_intent(intent_id: int):
@@ -46,7 +49,7 @@ def delete_intent(intent_id: int):
     if deleted:
         return {"message": "Intent deleted successfully"}
     else:
-        raise HTTPException(status_code=404, detail="Intent not found")
+        raise HTTPException(status_code=404, detail=INTENT_NOT_FOUND)
 
 @router.post("/recognize")
 async def recognize_intent(user_input: str):
