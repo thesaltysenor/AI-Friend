@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     ALLOWED_ORIGINS: list = ["http://localhost:8081"]
 
-    API_BASE_URL: str = os.getenv("API_BASE_URL", "http://localhost:1234/v1")
+    API_BASE_URL: str = os.getenv("LM_STUDIO_API_URL", "http://localhost:1234/v1")
     API_BASE_URL_DOCKER: str = os.getenv("API_BASE_URL_DOCKER", "http://host.docker.internal:1234/v1")    
     MYSQL_HOSTNAME: str = os.getenv("MYSQL_HOSTNAME", "ai-friend-db")
     MYSQL_USER: str = os.getenv("MYSQL_USER", "root")

@@ -1,5 +1,5 @@
 # app/services/context_manager.py
-
+# new one
 import logging
 from collections import deque
 import time
@@ -102,9 +102,9 @@ class ChatContextManager:
         if user_id in self.conversation_history:
             self.conversation_history[user_id] = []
 
-    def generate_response(self, user_id: str, message: Message, initial_context: List[Message]) -> Message:
-        # Use the initial_context if provided, otherwise get the triggered context
-        triggered_context = initial_context or self.context_triggers.get_triggered_context(message.content)
+    def generate_response(self, user_id: str, message: Message, triggered_context: List[Message]) -> Message:
+        # Get the triggered context
+        triggered_context = self.context_triggers.get_triggered_context(message.content)
 
         # Generate a response based on the user's message, context, and triggered context
         if triggered_context:

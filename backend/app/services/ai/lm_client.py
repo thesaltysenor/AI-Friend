@@ -59,6 +59,7 @@ class LMStudioClient:
                 )
             else:
                 raise ValueError("Unexpected response format: missing or empty choices")
+            
         except httpx.HTTPStatusError as e:
             logging.error(f"HTTP status error occurred: {e.response.text}")
             raise

@@ -32,7 +32,7 @@ export const ChatService = {
       });
       return {
         choices: response.data.choices,
-        adaptive_traits: response.data.adaptive_traits // Add this line
+        adaptive_traits: response.data.adaptive_traits
       };
     } catch (error) {
       console.error('Error sending message:', error);

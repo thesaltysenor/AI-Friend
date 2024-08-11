@@ -89,7 +89,7 @@ export default defineComponent({
         const character = characterStore.characters.find(c => c.id === characterId);
         if (character) {
           characterStore.setSelectedCharacter(character);
-          chatStore.clearMessages(); // Clear previous messages when changing characters
+          chatStore.clearMessages();
         }
       }
       scrollToBottom();

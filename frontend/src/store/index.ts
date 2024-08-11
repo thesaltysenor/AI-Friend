@@ -3,7 +3,6 @@
 import { defineStore } from 'pinia';
 import type { Character } from '@/types/Character';
 import Message from '@/services/MessageService';
-import { DEFAULT_CHARACTER } from '@/types/Character';
 import type { User, LoginCredentials, RegistrationData, UserUpdateData } from '@/types/User';
 import { CharacterService } from '@/services/CharacterService';
 import { ChatService } from '@/services/ChatService';
