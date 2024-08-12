@@ -30,8 +30,11 @@ export const ChatService = {
           'Content-Type': 'application/json'
         }
       });
+      console.log('Raw response from backend:', response.data);
+      // Extract the nested content
+      const content = response.data.choices[0].message.content.content;
       return {
-        choices: response.data.choices,
+        content: content,
         adaptive_traits: response.data.adaptive_traits
       };
     } catch (error) {

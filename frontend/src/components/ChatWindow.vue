@@ -7,7 +7,7 @@
       <p>{{ characterStore.selectedCharacter.description }}</p>
     </div>
     <div class="chat-history" ref="chatHistory">
-      <div v-for="(message, index) in chatStore.messages" :key="index"
+      <div v-for="message in chatStore.messages" :key="message.timestamp"
         :class="['message', message.role === 'user' ? 'user-message' : 'ai-message']">
         <div class="message-content">{{ message.content }}</div>
         <div class="message-timestamp">{{ formatTimestamp(message.timestamp) }}</div>
@@ -68,7 +68,8 @@ export default defineComponent({
         });
 
         try {
-          await chatStore.sendMessage(userMessage, characterStore.selectedCharacter.id);
+          const aiMessage = await chatStore.sendMessage(userMessage, characterStore.selectedCharacter.id);
+          console.log('AI message in component:', aiMessage);
           newMessage.value = '';
         } catch (error) {
           handleError(error, 'Failed to send message');

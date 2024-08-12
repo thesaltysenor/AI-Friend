@@ -76,16 +76,24 @@ export const useChatStore = defineStore('chat', {
     async sendMessage(message: Message, characterId: number) {
       this.isLoading = true;
       try {
+        this.addMessage(message); // Add user message immediately
         const response = await ChatService.postChatMessage([message], characterId);
-        if (response.choices && response.choices.length > 0) {
-          const botMessage = new Message({
-            role: 'assistant',
-            content: response.choices[0].message.content,
-            timestamp: Date.now(),
-          });
-          this.addMessage(botMessage);
+        console.log('Response in store:', response);
+        
+        // Create and add AI message
+        const aiMessage = new Message({
+          role: 'assistant',
+          content: response.content,
+          timestamp: Date.now(),
+          user_id: 'assistant'
+        });
+        console.log('AI message created:', aiMessage);
+        this.addMessage(aiMessage);
+
+        if (response.adaptive_traits) {
+          useCharacterStore().updateAdaptiveTraits(response.adaptive_traits);
         }
-        return response;
+        return aiMessage;
       } catch (error) {
         handleError(error, 'Error sending message');
         throw error;
@@ -93,6 +101,7 @@ export const useChatStore = defineStore('chat', {
         this.isLoading = false;
       }
     },
+    
     async generateImage(prompt: string, aiPersonalityId: number) {
       this.isLoading = true;
       try {
