@@ -25,7 +25,7 @@ class SessionManager:
         try:
             with self.conn.cursor() as cursor:
                 start_time = datetime.now(timezone.utc)
-                sql = "INSERT INTO sessions (user_id, start_time, status) VALUES (%s, %s, %s)"
+                sql = "INSERT INTO session (user_id, start_time, status) VALUES (%s, %s, %s)"
                 cursor.execute(sql, (user_id, start_time, status))
                 self.conn.commit()
                 session_id = cursor.lastrowid
@@ -38,7 +38,7 @@ class SessionManager:
     def get_session_by_id(self, session_id: int) -> Optional[Session]:
         try:
             with self.conn.cursor() as cursor:
-                sql = "SELECT * FROM sessions WHERE id = %s"
+                sql = "SELECT * FROM session WHERE id = %s"
                 cursor.execute(sql, (session_id,))
                 result = cursor.fetchone()
                 if result:
@@ -62,7 +62,7 @@ class SessionManager:
                     update_values.append(status)
 
                 if update_fields:
-                    sql = "UPDATE sessions SET " + ", ".join(update_fields) + " WHERE id = %s"
+                    sql = "UPDATE session SET " + ", ".join(update_fields) + " WHERE id = %s"
                     update_values.append(session_id)
                     cursor.execute(sql, update_values)
                     self.conn.commit()
@@ -76,7 +76,7 @@ class SessionManager:
     def delete_session(self, session_id: int) -> bool:
         try:
             with self.conn.cursor() as cursor:
-                sql = "DELETE FROM sessions WHERE id = %s"
+                sql = "DELETE FROM session WHERE id = %s"
                 cursor.execute(sql, (session_id,))
                 self.conn.commit()
                 return True

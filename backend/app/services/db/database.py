@@ -79,9 +79,9 @@ def create_tables() -> None:
                 )
             """))
 
-            # Create sessions table
+            # Create session table
             connection.execute(text("""
-                CREATE TABLE IF NOT EXISTS sessions (
+                CREATE TABLE IF NOT EXISTS session (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id INT,
                     start_time DATETIME,
@@ -100,7 +100,7 @@ def create_tables() -> None:
                     message_id VARCHAR(36),
                     rating INT,
                     FOREIGN KEY (user_id) REFERENCES users(user_id),
-                    FOREIGN KEY (session_id) REFERENCES sessions(id)
+                    FOREIGN KEY (session_id) REFERENCES session(id)
                 )
             """))
 
