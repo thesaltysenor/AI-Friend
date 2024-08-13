@@ -14,10 +14,10 @@
       </div>
     </div>
     <div class="chat-input">
-      <input type="text" v-model="newMessage" @keyup.enter="sendMessage" :disabled="chatStore.isLoading"
+      <input type="text" v-model="newMessage" @keyup.enter="sendMessage" :disabled="chatStore.isWaitingForAI"
         placeholder="Type your message...">
-      <button @click="sendMessage" :disabled="chatStore.isLoading">
-        {{ chatStore.isLoading ? 'Sending...' : 'Send' }}
+      <button @click="sendMessage" :disabled="chatStore.isWaitingForAI">
+        {{ chatStore.isWaitingForAI ? 'Waiting...' : 'Send' }}
       </button>
     </div>
   </div>
@@ -25,7 +25,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, watch } from 'vue';
+import { defineComponent, ref, onMounted, watch, computed, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import { useCharacterStore, useChatStore } from '@/store';
 import Message from '@/services/MessageService';
@@ -50,7 +50,6 @@ export default defineComponent({
     };
 
     const handleImageGenerated = (imageUrl: string) => {
-      // Add the generated image to the chat
       chatStore.addMessage(new Message({
         role: 'assistant',
         content: `Here's the image you requested: ${imageUrl}`,
@@ -58,8 +57,10 @@ export default defineComponent({
       }));
     };
 
+    const canSendMessage = computed(() => !chatStore.isWaitingForAI && newMessage.value.trim() !== '');
+
     const sendMessage = async () => {
-      if (newMessage.value.trim() && characterStore.selectedCharacter) {
+      if (canSendMessage.value && characterStore.selectedCharacter) {
         const userMessage = new Message({
           role: 'user',
           content: newMessage.value,
@@ -67,12 +68,17 @@ export default defineComponent({
           user_id: 'test_user'
         });
 
+        // Store original message in case we need to restore it on error
+        // const messageContent = newMessage.value;
+
+        newMessage.value = ''; // Clear input immediately
+
         try {
-          const aiMessage = await chatStore.sendMessage(userMessage, characterStore.selectedCharacter.id);
-          console.log('AI message in component:', aiMessage);
-          newMessage.value = '';
+          await chatStore.sendMessage(userMessage, characterStore.selectedCharacter.id);
         } catch (error) {
           handleError(error, 'Failed to send message');
+          // Optionally, restore the message if sending fails
+          // newMessage.value = messageContent;
         }
       }
     };
@@ -97,7 +103,9 @@ export default defineComponent({
     });
 
     watch(() => chatStore.messages, () => {
-      scrollToBottom();
+      nextTick(() => {
+        scrollToBottom();
+      });
     }, { deep: true });
 
     return {
@@ -105,6 +113,7 @@ export default defineComponent({
       chatStore,
       newMessage,
       sendMessage,
+      canSendMessage,
       getCharacterImage,
       formatTimestamp,
       chatHistory,

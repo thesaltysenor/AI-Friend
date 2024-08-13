@@ -65,6 +65,7 @@ export const useChatStore = defineStore('chat', {
   state: () => ({
     messages: [] as Message[],
     isLoading: false,
+    isWaitingForAI: false,
   }),
   actions: {
     addMessage(message: Message) {
@@ -74,7 +75,10 @@ export const useChatStore = defineStore('chat', {
       this.messages = [];
     },
     async sendMessage(message: Message, characterId: number) {
+      if (this.isWaitingForAI) return; // Prevent sending if waiting for AI
+      
       this.isLoading = true;
+      this.isWaitingForAI = true;
       try {
         this.addMessage(message); // Add user message immediately
         const response = await ChatService.postChatMessage([message], characterId);
@@ -99,9 +103,9 @@ export const useChatStore = defineStore('chat', {
         throw error;
       } finally {
         this.isLoading = false;
+        this.isWaitingForAI = false;
       }
     },
-    
     async generateImage(prompt: string, aiPersonalityId: number) {
       this.isLoading = true;
       try {

@@ -21,7 +21,7 @@ export const ChatService = {
       model: 'mlabonne/AlphaMonarch-7B-GGUF/alphamonarch-7b.Q2_K.gguf',
       messages: messages.map((message) => message.model_dump()),
       temperature: 0.7,
-      max_tokens: 150,
+      max_tokens: 50,
       ai_personality_id: characterId
     };
     try {
