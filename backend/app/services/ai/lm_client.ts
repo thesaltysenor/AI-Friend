@@ -1,4 +1,5 @@
 import { LMStudioClient } from "@lmstudio/sdk";
+// import CHOSEN_LM_MODEL from .env
 
 async function main() {
   // Create a client to connect to LM Studio, then load a model

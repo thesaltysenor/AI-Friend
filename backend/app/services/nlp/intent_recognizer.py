@@ -4,7 +4,7 @@ import logging
 from app.services.ai.lm_client import LMStudioClient
 from app.models.messages import Message
 from app.schemas.schemas import ChatInputMessage
-
+# import CHOSEN_LM_MODEL from .env
 
 class IntentRecognizer:
     def __init__(self):
@@ -21,6 +21,8 @@ class IntentRecognizer:
             # Use the LM Studio API to generate a response
             response = await self.lm_client.create_chat_completion(
                 messages=[message],
+                
+                # import CHOSEN_LM_MODEL from .env
                 model="mlabonne/AlphaMonarch-7B-GGUF/alphamonarch-7b.Q2_K.gguf",
                 temperature=0.3,
                 max_tokens=50

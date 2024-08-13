@@ -3,6 +3,7 @@ import Message from './MessageService';
 import axios from 'axios';
 import {DEFAULT_CHARACTER, type Character } from '@/types/Character';
 
+//address for .env usage
 const API_URL = 'http://localhost:8000/api/v1';
 
 export const ChatService = {
@@ -18,6 +19,7 @@ export const ChatService = {
 
   async postChatMessage(messages: Message[], characterId: number): Promise<any> {
     const payload = {
+      // import CHOSEN_LM_MODEL from .env
       model: 'mlabonne/AlphaMonarch-7B-GGUF/alphamonarch-7b.Q2_K.gguf',
       messages: messages.map((message) => message.model_dump()),
       temperature: 0.7,

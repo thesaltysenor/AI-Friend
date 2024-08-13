@@ -10,7 +10,7 @@ from app.utils.text_cleaning import clean_ai_response
 from app.utils.text_processing import post_process_response
 
 class ChatContextManager:
-    def __init__(self, max_length=100, max_age=900, decay_rate=0.05):
+    def __init__(self, max_length: int = 100, max_age: int = 900, decay_rate: float = 0.05):
         self.contexts = {}
         self.conversation_history = {}
         self.max_length = max_length

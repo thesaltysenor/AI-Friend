@@ -8,6 +8,8 @@ from app.services.ai.lm_client import LMStudioClient
 import datetime
 from app.utils.text_cleaning import clean_ai_response
 from app.utils.text_processing import post_process_response
+# import CHOSEN_LM_MODEL from .env
+
 class SmallTalkModule:
     def __init__(self):
         self.lm_client = LMStudioClient()
@@ -24,6 +26,8 @@ class SmallTalkModule:
 
             response = await self.lm_client.create_chat_completion(
                 messages=messages,
+                
+                # import CHOSEN_LM_MODEL from .env
                 model="mlabonne/AlphaMonarch-7B-GGUF/alphamonarch-7b.Q2_K.gguf",
                 temperature=0.7,
                 max_tokens=100

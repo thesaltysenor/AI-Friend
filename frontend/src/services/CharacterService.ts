@@ -2,6 +2,7 @@
 import axios from 'axios';
 import type { Character } from '@/types/Character';
 
+//address this for .env usage
 const API_URL = 'http://localhost:8000/api/v1';
 
 export const CharacterService = {
