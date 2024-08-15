@@ -1,15 +1,14 @@
 # app/models/feedback.py
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
-from app.services.db.database import Base
+from .base import BaseModel
 
-class Feedback(Base):
-    __tablename__ = "feedback"
+class Feedback(BaseModel):
+    __tablename__ = "feedbacks"
 
-    id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String(36), ForeignKey('users.user_id'))
-    session_id = Column(Integer, ForeignKey('session.id'))
-    message_id = Column(Integer, ForeignKey('messages.id'))
+    session_id = Column(ForeignKey('sessions.id'))
+    message_id = Column(ForeignKey('messages.id'))
     rating = Column(Integer)
 
     user = relationship("User", back_populates="feedbacks")

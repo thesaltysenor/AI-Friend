@@ -1,17 +1,17 @@
 # app/models/session.py
-from sqlalchemy import Column, Integer, DateTime, ForeignKey, String
+
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from app.services.db.database import Base
 from datetime import datetime
+from .base import BaseModel
 
-class Session(Base):
-    __tablename__ = "session"
+class Session(BaseModel):
+    __tablename__ = "sessions"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String(36), ForeignKey('users.user_id'))
+    user_id = Column(Integer, ForeignKey("users.id"))
     start_time = Column(DateTime, default=datetime.utcnow)
-    end_time = Column(DateTime)
+    end_time = Column(DateTime, nullable=True)
     status = Column(String(50))
 
     user = relationship("User", back_populates="sessions")
-    feedbacks = relationship("Feedback", back_populates="session")
+    messages = relationship("Message", back_populates="session")

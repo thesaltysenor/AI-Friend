@@ -1,84 +1,66 @@
 # app/services/entity_manager.py
 
 import logging
-from typing import Optional
-import pymysql
-from app.core.config import settings
+from typing import Optional, List
+from sqlalchemy.orm import Session
 from app.models.entity import Entity
+from app.services.db.database_setup import get_db
 
 class EntityManager:
     def __init__(self):
-        try:
-            self.conn = pymysql.connect(
-                host=settings.MYSQL_HOSTNAME,
-                user=settings.MYSQL_USER,
-                password=settings.MYSQL_PASSWORD,
-                database=settings.MYSQL_DB,
-                port=settings.MYSQL_PORT
-            )
-        except pymysql.Error as e:
-            logging.error(f"Error connecting to the database: {str(e)}")
-            self.conn = None
+        self.db: Session = next(get_db())
 
-    def create_entity(self, entity_name: str, intent_id: int) -> Optional[Entity]:
+    def create_entity(self, entity_name: str, conversation_intent_id: int) -> Optional[Entity]:
         try:
-            with self.conn.cursor() as cursor:
-                sql = "INSERT INTO entities (entity_name, intent_id) VALUES (%s, %s)"
-                cursor.execute(sql, (entity_name, intent_id))
-                self.conn.commit()
-                entity_id = cursor.lastrowid
-                return Entity(id=entity_id, entity_name=entity_name, intent_id=intent_id)
-        except pymysql.Error as e:
+            new_entity = Entity(entity_name=entity_name, conversation_intent_id=conversation_intent_id)
+            self.db.add(new_entity)
+            self.db.commit()
+            self.db.refresh(new_entity)
+            return new_entity
+        except Exception as e:
             logging.error(f"Error creating Entity: {str(e)}")
-            self.conn.rollback()
+            self.db.rollback()
             return None
 
     def get_entity_by_id(self, entity_id: int) -> Optional[Entity]:
         try:
-            with self.conn.cursor() as cursor:
-                sql = "SELECT * FROM entities WHERE id = %s"
-                cursor.execute(sql, (entity_id,))
-                result = cursor.fetchone()
-                if result:
-                    return Entity(id=result[0], entity_name=result[1], intent_id=result[2])
-                else:
-                    return None
-        except pymysql.Error as e:
+            return self.db.query(Entity).filter(Entity.id == entity_id).first()
+        except Exception as e:
             logging.error(f"Error getting Entity by ID: {str(e)}")
             return None
 
-    def update_entity(self, entity_id: int, entity_name: Optional[str] = None, intent_id: Optional[int] = None) -> Optional[Entity]:
+    def update_entity(self, entity_id: int, entity_name: Optional[str] = None, conversation_intent_id: Optional[int] = None) -> Optional[Entity]:
         try:
-            with self.conn.cursor() as cursor:
-                update_fields = []
-                update_values = []
+            entity = self.get_entity_by_id(entity_id)
+            if entity:
                 if entity_name is not None:
-                    update_fields.append("entity_name = %s")
-                    update_values.append(entity_name)
-                if intent_id is not None:
-                    update_fields.append("intent_id = %s")
-                    update_values.append(intent_id)
-
-                if update_fields:
-                    sql = "UPDATE entities SET " + ", ".join(update_fields) + " WHERE id = %s"
-                    update_values.append(entity_id)
-                    cursor.execute(sql, update_values)
-                    self.conn.commit()
-
-                return self.get_entity_by_id(entity_id)
-        except pymysql.Error as e:
+                    entity.entity_name = entity_name
+                if conversation_intent_id is not None:
+                    entity.conversation_intent_id = conversation_intent_id
+                self.db.commit()
+                self.db.refresh(entity)
+            return entity
+        except Exception as e:
             logging.error(f"Error updating Entity: {str(e)}")
-            self.conn.rollback()
+            self.db.rollback()
             return None
 
     def delete_entity(self, entity_id: int) -> bool:
         try:
-            with self.conn.cursor() as cursor:
-                sql = "DELETE FROM entities WHERE id = %s"
-                cursor.execute(sql, (entity_id,))
-                self.conn.commit()
+            entity = self.get_entity_by_id(entity_id)
+            if entity:
+                self.db.delete(entity)
+                self.db.commit()
                 return True
-        except pymysql.Error as e:
-            logging.error(f"Error deleting Entity: {str(e)}")
-            self.conn.rollback()
             return False
+        except Exception as e:
+            logging.error(f"Error deleting Entity: {str(e)}")
+            self.db.rollback()
+            return False
+
+    def get_all_entities(self) -> List[Entity]:
+        try:
+            return self.db.query(Entity).all()
+        except Exception as e:
+            logging.error(f"Error getting all Entities: {str(e)}")
+            return []

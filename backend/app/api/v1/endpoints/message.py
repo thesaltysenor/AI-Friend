@@ -1,41 +1,41 @@
-from fastapi import APIRouter, HTTPException
+# app/api/v1/endpoints/message.py
+
+from fastapi import APIRouter, HTTPException, Depends, status
 from app.schemas.schemas import MessageCreate, MessageRead, MessageUpdate
 from app.services.db.message_manager import MessageManager
+from app.core.dependencies import get_db
+from sqlalchemy.orm import Session
 
 router = APIRouter()
-message_manager = MessageManager()
 
-# Define the constant for the error message
 MESSAGE_NOT_FOUND = "Message not found"
 
-@router.post("", response_model=MessageRead)
-def create_message(message: MessageCreate):
+def get_message_manager(db: Session = Depends(get_db)):
+    return MessageManager(db)
+
+@router.post("", response_model=MessageRead, status_code=status.HTTP_201_CREATED)
+def create_message(message: MessageCreate, message_manager: MessageManager = Depends(get_message_manager)):
     created_message = message_manager.create_message(message.role, message.content, message.user_id, message.relevance)
-    if created_message:
-        return created_message
-    else:
-        raise HTTPException(status_code=500, detail="Failed to create Message")
+    if not created_message:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create Message")
+    return created_message
 
 @router.get("/{message_id}", response_model=MessageRead)
-def get_message(message_id: int):
+def get_message(message_id: int, message_manager: MessageManager = Depends(get_message_manager)):
     message = message_manager.get_message_by_id(message_id)
-    if message:
-        return message
-    else:
-        raise HTTPException(status_code=404, detail=MESSAGE_NOT_FOUND)
+    if not message:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=MESSAGE_NOT_FOUND)
+    return message
 
 @router.put("/{message_id}", response_model=MessageRead)
-def update_message(message_id: int, message_update: MessageUpdate):
+def update_message(message_id: int, message_update: MessageUpdate, message_manager: MessageManager = Depends(get_message_manager)):
     updated_message = message_manager.update_message(message_id, message_update.role, message_update.content, message_update.relevance)
-    if updated_message:
-        return updated_message
-    else:
-        raise HTTPException(status_code=404, detail=MESSAGE_NOT_FOUND)
+    if not updated_message:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=MESSAGE_NOT_FOUND)
+    return updated_message
 
-@router.delete("/{message_id}")
-def delete_message(message_id: int):
+@router.delete("/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_message(message_id: int, message_manager: MessageManager = Depends(get_message_manager)):
     deleted = message_manager.delete_message(message_id)
-    if deleted:
-        return {"message": "Message deleted successfully"}
-    else:
-        raise HTTPException(status_code=404, detail=MESSAGE_NOT_FOUND)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=MESSAGE_NOT_FOUND)

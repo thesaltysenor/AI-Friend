@@ -1,21 +1,23 @@
-from .ai_personality_manager import AIPersonalityManager
-from .entity_manager import EntityManager
-from .feedback_manager import FeedbackManager
-from .intent_manager import IntentManager
-from .message_manager import MessageManager
-from .session_manager import SessionManager
+# app/services/db/__init__.py
+
+from .character_database import CharacterDatabase
 from .user_preference_manager import UserPreferenceManager
-from .database import create_tables, get_db
+from .session_manager import SessionManager
+from .message_manager import MessageManager
+from .conversation_intent_manager import ConversationIntentManager
+from .feedback_manager import FeedbackManager
+from .entity_manager import EntityManager
 from .image_service import ImageService
+from .user_manager import UserManager
+
 __all__ = [
-    "AIPersonalityManager",
-    "EntityManager",
-    "FeedbackManager",
-    "IntentManager",
-    "MessageManager",
-    "SessionManager",
+    "CharacterDatabase",
     "UserPreferenceManager",
-    "create_tables",
-    "get_db",
-    "ImageService"
+    "SessionManager",
+    "MessageManager",
+    "ConversationIntentManager",
+    "FeedbackManager",
+    "EntityManager",
+    "ImageService",
+    "UserManager",
 ]

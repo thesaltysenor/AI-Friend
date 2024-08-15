@@ -1,5 +1,8 @@
-from .intent_recognizer import IntentRecognizer
-from .small_talk_module import SmallTalkModule
-from .interaction_manager import InteractionManager
+# app/services/nlp/__init__.py
 
-__all__ = ["IntentRecognizer", "SmallTalkModule", "InteractionManager"]
+from .user_input_analyzer import UserInputAnalyzer
+from .casual_conversation_handler import CasualConversation
+from ..db.interaction_manager import InteractionManager
+from app.services.nlp import NLPService
+
+__all__ = ["UserInputAnalyzer", "CasualConversation", "InteractionManager","NLPService"]

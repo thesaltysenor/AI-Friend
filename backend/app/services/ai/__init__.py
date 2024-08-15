@@ -1,4 +1,5 @@
 from .lm_client import LMStudioClient
-from .ai_personality import AIPersonality
+from .personalized_chatbot import PersonalizedChatbot
+from .comfy_ui_service import ComfyUIService
 
-__all__ = ["LMStudioClient", "AIPersonality"]
+__all__ = ["LMStudioClient", "PersonalizedChatbot", "ComfyUIService"]

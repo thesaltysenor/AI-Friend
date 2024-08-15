@@ -1,41 +1,44 @@
-from fastapi import APIRouter, HTTPException
+# app/api/v1/endpoints/entity.py
+
+from typing import List
+from fastapi import APIRouter, HTTPException, Depends, status
+from sqlalchemy.orm import Session
 from app.schemas.schemas import EntityCreate, EntityRead, EntityUpdate
 from app.services.db.entity_manager import EntityManager
+from app.core.dependencies import get_db
 
 router = APIRouter()
-entity_manager = EntityManager()
 
-# Define the constant for the error message
 ENTITY_NOT_FOUND = "Entity not found"
 
-@router.post("", response_model=EntityRead)
-def create_entity(entity: EntityCreate):
-    created_entity = entity_manager.create_entity(entity.entity_name, entity.intent_id)
-    if created_entity:
-        return created_entity
-    else:
-        raise HTTPException(status_code=500, detail="Failed to create Entity")
+def get_entity_manager(db: Session = Depends(get_db)):
+    return EntityManager(db)
+
+@router.post("", response_model=EntityRead, status_code=status.HTTP_201_CREATED)
+def create_entity(entity: EntityCreate, entity_manager: EntityManager = Depends(get_entity_manager)):
+    created_entity = entity_manager.create_entity(entity.entity_name, entity.conversation_intent_id)
+    return created_entity
 
 @router.get("/{entity_id}", response_model=EntityRead)
-def get_entity(entity_id: int):
+def get_entity(entity_id: int, entity_manager: EntityManager = Depends(get_entity_manager)):
     entity = entity_manager.get_entity_by_id(entity_id)
-    if entity:
-        return entity
-    else:
-        raise HTTPException(status_code=404, detail=ENTITY_NOT_FOUND)
+    if not entity:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ENTITY_NOT_FOUND)
+    return entity
 
 @router.put("/{entity_id}", response_model=EntityRead)
-def update_entity(entity_id: int, entity_update: EntityUpdate):
-    updated_entity = entity_manager.update_entity(entity_id, entity_update.entity_name, entity_update.intent_id)
-    if updated_entity:
-        return updated_entity
-    else:
-        raise HTTPException(status_code=404, detail=ENTITY_NOT_FOUND)
+def update_entity(entity_id: int, entity_update: EntityUpdate, entity_manager: EntityManager = Depends(get_entity_manager)):
+    updated_entity = entity_manager.update_entity(entity_id, entity_name=entity_update.entity_name, conversation_intent_id=entity_update.conversation_intent_id)
+    if not updated_entity:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ENTITY_NOT_FOUND)
+    return updated_entity
 
-@router.delete("/{entity_id}")
-def delete_entity(entity_id: int):
+@router.delete("/{entity_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_entity(entity_id: int, entity_manager: EntityManager = Depends(get_entity_manager)):
     deleted = entity_manager.delete_entity(entity_id)
-    if deleted:
-        return {"message": "Entity deleted successfully"}
-    else:
-        raise HTTPException(status_code=404, detail=ENTITY_NOT_FOUND)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=ENTITY_NOT_FOUND)
+
+@router.get("", response_model=List[EntityRead])
+def get_all_entities(entity_manager: EntityManager = Depends(get_entity_manager)):
+    return entity_manager.get_all_entities()

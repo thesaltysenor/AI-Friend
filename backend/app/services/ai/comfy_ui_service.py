@@ -7,37 +7,80 @@ from app.core.config import settings
 
 class ComfyUIService:
     def __init__(self):
-        self.base_url = settings.COMFYUI_BASE_URL
-        self.session = None
+        self.base_url: str = settings.COMFYUI_BASE_URL
+        self.session: aiohttp.ClientSession = None
 
-    async def connect(self):
+    async def connect(self) -> None:
+        """Establish a connection to the ComfyUI service."""
         if self.session is None or self.session.closed:
             self.session = aiohttp.ClientSession()
 
-    async def disconnect(self):
+    async def disconnect(self) -> None:
+        """Close the connection to the ComfyUI service."""
         if self.session and not self.session.closed:
             await self.session.close()
 
     def _get_safe_url(self, path: str) -> str:
+        """
+        Construct a safe URL by joining the base URL with the given path.
+
+        Args:
+            path (str): The path to append to the base URL.
+
+        Returns:
+            str: The complete, safe URL.
+        """
         return urljoin(self.base_url, path)
 
     async def generate_image(self, prompt: str) -> str:
-        await self.connect()  # Ensure we have an active session
+        """
+        Generate an image based on the given prompt.
+
+        Args:
+            prompt (str): The text prompt for image generation.
+
+        Returns:
+            str: The prompt ID for the generated image.
+
+        Raises:
+            aiohttp.ClientError: If there's an error in the API call.
+        """
+        await self.connect()
         url = self._get_safe_url("prompt")
         comfy_prompt = await self.create_image_generation_prompt(prompt)
         async with self.session.post(url, json=comfy_prompt) as response:
+            response.raise_for_status()
             data = await response.json()
             return data['prompt_id']
 
     async def get_image(self, prompt_id: str) -> bytes:
-        await self.connect()  # Ensure we have an active session
+        """
+        Retrieve the generated image for a given prompt ID.
+
+        Args:
+            prompt_id (str): The ID of the prompt used to generate the image.
+
+        Returns:
+            bytes: The image data.
+
+        Raises:
+            aiohttp.ClientError: If there's an error in the API call.
+        """
+        await self.connect()
         url = self._get_safe_url("view")
         params = {"filename": prompt_id}
         async with self.session.get(url, params=params) as response:
+            response.raise_for_status()
             return await response.read()
 
     async def listen_for_updates(self) -> AsyncGenerator[Dict[str, Any], None]:
-        await self.connect()  # Ensure we have an active session
+        """
+        Listen for updates from the ComfyUI service.
+
+        Yields:
+            Dict[str, Any]: Update messages from the ComfyUI service.
+        """
+        await self.connect()
         ws_url = self._get_safe_url("ws")
         async with self.session.ws_connect(ws_url) as ws:
             async for msg in ws:
@@ -46,7 +89,16 @@ class ComfyUIService:
                 elif msg.type in (aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.ERROR):
                     break
                 
-    async def create_image_generation_prompt(self, text_prompt):
+    async def create_image_generation_prompt(self, text_prompt: str) -> Dict[str, Any]:
+        """
+        Create the image generation prompt structure for ComfyUI.
+
+        Args:
+            text_prompt (str): The text prompt for image generation.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the structured prompt for ComfyUI.
+        """
         return {
             "prompt": {
                 "3": {

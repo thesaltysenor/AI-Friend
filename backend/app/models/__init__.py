@@ -1,8 +1,14 @@
-from app.services.db.database import Base
+# app/models/__init__.py
+
+# First, import Base to ensure it's available for all models
+from app.services.db.database_setup import Base
+
+# Then import all your models
+from .base import BaseModel
 from .user import User
-from .ai_personality import AIPersonality
+from .character import Character
 from .messages import Message
-from .intent import Intent
+from .conversation_intent import ConversationIntent
 from .interaction import Interaction
 from .entity import Entity
 from .feedback import Feedback
@@ -16,4 +22,18 @@ def init_models():
     pass
 
 # This ensures all models are registered with Base.metadata
-__all__ = ["Base", "User", "AIPersonality", "Message", "GeneratedImage", "Intent", "Interaction", "Entity", "Feedback", "Session", "UserPreference", "init_models"]
+__all__ = [
+    "Base",  # Add Base to __all__
+    "BaseModel",
+    "User",
+    "Character",
+    "Message",
+    "GeneratedImage",
+    "ConversationIntent",
+    "Interaction",
+    "Entity",
+    "Feedback",
+    "Session",
+    "UserPreference",
+    "init_models"
+]

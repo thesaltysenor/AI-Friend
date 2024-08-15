@@ -35,10 +35,10 @@ def analyze_and_adjust_response(messages, chat_input):
         raise HTTPException(status_code=500, detail="Failed to analyze and adjust response based on sentiment")
     return chat_input
 
-def handle_intent(recognized_intent, user_message, context):
-    if recognized_intent == "greeting":
+def handle_conversation_intent(recognized_conversation_intent, user_message, context):
+    if recognized_conversation_intent == "greeting":
         return "Hello! How can I assist you today?"
-    elif recognized_intent == "help":
+    elif recognized_conversation_intent == "help":
         return "Sure, I'm here to help. What do you need assistance with?"
     else:
         return None

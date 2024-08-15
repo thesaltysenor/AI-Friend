@@ -1,60 +1,60 @@
-# app/api/v1/endpoints/intent.py
+# app/api/v1/endpoints/conversation_intent.py
 
-from fastapi import APIRouter, HTTPException
-from app.schemas.schemas import IntentCreate, IntentRead, IntentUpdate
-from app.services.db.intent_manager import IntentManager
-from app.services.nlp.intent_recognizer import IntentRecognizer
+from fastapi import APIRouter, HTTPException, Depends, status
+from app.schemas.schemas import ConversationIntentCreate, ConversationIntentRead, ConversationIntentUpdate
+from app.services.db.conversation_intent_manager import ConversationIntentManager
+from app.services.nlp.user_input_analyzer import UserInputAnalyzer
+from app.core.dependencies import get_db
+from sqlalchemy.orm import Session
 
 router = APIRouter()
-intent_manager = IntentManager()
-intent_recognizer = IntentRecognizer()
 
-# Define the constant for the error message
-INTENT_NOT_FOUND = "Intent not found"
+CONVERSATION_INTENT_NOT_FOUND = "Conversation Intent not found"
 
-@router.post("", response_model=IntentRead)
-def create_intent(intent: IntentCreate):
-    created_intent = intent_manager.create_intent(
-        intent_name=intent.intent_name,
-        description=intent.description
+def get_conversation_intent_manager(db: Session = Depends(get_db)):
+    return ConversationIntentManager(db)
+
+def get_user_input_analyzer():
+    return UserInputAnalyzer()
+
+@router.post("", response_model=ConversationIntentRead, status_code=status.HTTP_201_CREATED)
+def create_conversation_intent(conversation_intent: ConversationIntentCreate, conversation_intent_manager: ConversationIntentManager = Depends(get_conversation_intent_manager)):
+    created_conversation_intent = conversation_intent_manager.create_conversation_intent(
+        conversation_intent_name=conversation_intent.conversation_intent_name,
+        description=conversation_intent.description
     )
-    if created_intent:
-        return created_intent
-    else:
-        raise HTTPException(status_code=500, detail="Failed to create Intent")
+    if not created_conversation_intent:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create Conversation Intent")
+    return created_conversation_intent
 
-@router.get("/{intent_id}", response_model=IntentRead)
-def get_intent(intent_id: int):
-    intent = intent_manager.get_intent_by_id(intent_id)
-    if intent:
-        return intent
-    else:
-        raise HTTPException(status_code=404, detail=INTENT_NOT_FOUND)
+@router.get("/{conversation_intent_id}", response_model=ConversationIntentRead)
+def get_conversation_intent(conversation_intent_id: int, conversation_intent_manager: ConversationIntentManager = Depends(get_conversation_intent_manager)):
+    conversation_intent = conversation_intent_manager.get_conversation_intent_by_id(conversation_intent_id)
+    if not conversation_intent:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=CONVERSATION_INTENT_NOT_FOUND)
+    return conversation_intent
 
-@router.put("/{intent_id}", response_model=IntentRead)
-def update_intent(intent_id: int, intent_update: IntentUpdate):
-    updated_intent = intent_manager.update_intent(
-        intent_id=intent_id,
-        intent_name=intent_update.intent_name,
-        description=intent_update.description
+@router.put("/{conversation_intent_id}", response_model=ConversationIntentRead)
+def update_conversation_intent(conversation_intent_id: int, conversation_intent_update: ConversationIntentUpdate, conversation_intent_manager: ConversationIntentManager = Depends(get_conversation_intent_manager)):
+    updated_conversation_intent = conversation_intent_manager.update_conversation_intent(
+        conversation_intent_id=conversation_intent_id,
+        conversation_intent_name=conversation_intent_update.conversation_intent_name,
+        description=conversation_intent_update.description
     )
-    if updated_intent:
-        return updated_intent
-    else:
-        raise HTTPException(status_code=404, detail=INTENT_NOT_FOUND)
+    if not updated_conversation_intent:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=CONVERSATION_INTENT_NOT_FOUND)
+    return updated_conversation_intent
 
-@router.delete("/{intent_id}")
-def delete_intent(intent_id: int):
-    deleted = intent_manager.delete_intent(intent_id)
-    if deleted:
-        return {"message": "Intent deleted successfully"}
-    else:
-        raise HTTPException(status_code=404, detail=INTENT_NOT_FOUND)
+@router.delete("/{conversation_intent_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_conversation_intent(conversation_intent_id: int, conversation_intent_manager: ConversationIntentManager = Depends(get_conversation_intent_manager)):
+    deleted = conversation_intent_manager.delete_conversation_intent(conversation_intent_id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=CONVERSATION_INTENT_NOT_FOUND)
 
-@router.post("/recognize")
-async def recognize_intent(user_input: str):
+@router.post("/analyze")
+async def analyze_user_input(user_input: str, user_input_analyzer: UserInputAnalyzer = Depends(get_user_input_analyzer)):
     try:
-        intent = await intent_recognizer.recognize_intent(user_input)
-        return {"intent": intent}
+        conversation_intent = await user_input_analyzer.categorize_input(user_input)
+        return {"conversation_intent": conversation_intent}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to recognize intent: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to analyze user input: {str(e)}")

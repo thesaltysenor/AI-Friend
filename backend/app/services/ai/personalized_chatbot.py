@@ -1,4 +1,4 @@
-# app/services/ai/ai_personality.py
+# app/services/ai/personalized_chatbot.py
 
 import logging
 import datetime
@@ -8,28 +8,26 @@ from app.schemas import ChatInputMessage
 from app.services.ai.lm_client import LMStudioClient
 from app.utils.text_cleaning import clean_ai_response
 from app.utils.text_processing import post_process_response
-from app.services.db.ai_personality_manager import AIPersonalityManager
+from app.services.db.character_database import CharacterDatabase
 from app.services.characters.character_details import get_character_details
-from app.services.nlp.nlp_service import SentimentAnalysis
-from app.services.nlp.intent_recognizer import IntentRecognizer
+from app.services.nlp.nlp_service import NLPService
 
-class AIPersonality:
-    def __init__(self, ai_personality_id=None):
-        self.ai_personality_manager = AIPersonalityManager()
-        self.sentiment_analyzer = SentimentAnalysis()
-        self.intent_recognizer = IntentRecognizer()
+class PersonalizedChatbot:
+    def __init__(self, character_id=None):
+        self.character_details = CharacterDatabase()
+        self.nlp_service = NLPService()
         
-        if ai_personality_id is None or ai_personality_id == 0:
-            ai_personality_id = self.ai_personality_manager.get_or_create_default_ai_personality()
+        if character_id is None or character_id == 0:
+            character_id = self.character_details.get_or_create_default_character()
         
-        self.ai_personality = self.ai_personality_manager.get_ai_personality_by_id(ai_personality_id)
+        self.character = self.character_details.get_character_by_id(character_id)
         
-        if self.ai_personality is None:
-            logging.warning(f"No AI personality found for id: {ai_personality_id}. Creating default adaptive personality.")
-            ai_personality_id = self.ai_personality_manager.get_or_create_default_ai_personality()
-            self.ai_personality = self.ai_personality_manager.get_ai_personality_by_id(ai_personality_id)
+        if self.character is None:
+            logging.warning(f"No character found for id: {character_id}. Creating default adaptive personality.")
+            character_id = self.character_details.get_or_create_default_character()
+            self.character = self.character_details.get_character_by_id(character_id)
         
-        self.character_details = get_character_details(self.ai_personality.character_type)
+        self.character_details = get_character_details(self.character.character_type)
         self.lm_client = LMStudioClient()
         
         # Always initialize personality traits, defaulting to adaptive
@@ -38,15 +36,11 @@ class AIPersonality:
             "enthusiasm": 0,
             "humor": 0,
             "empathy": 0,
-        } if self.ai_personality.character_type == "adaptive" else None
-
-    def get_default_personality(self):
-        # This method is no longer needed, but kept for backwards compatibility
-        return self.ai_personality_manager.get_or_create_default_ai_personality()
+        } if self.character.character_type == "adaptive" else None
 
     def get_system_prompt(self):
-        base_prompt = f"""You are {self.ai_personality.name}. {self.ai_personality.description} 
-        Your personality traits are: {self.ai_personality.personality_traits}.
+        base_prompt = f"""You are {self.character.name}. {self.character.description} 
+        Your personality traits are: {self.character.personality_traits}.
         Backstory: {self.character_details['backstory']}
         Speak in a {self.character_details['speech_style']} manner.
         You have expertise in: {', '.join(self.character_details['knowledge_areas'])}."""
@@ -81,16 +75,15 @@ class AIPersonality:
 
     async def analyze_message(self, message: str):
         if self.personality_traits:
-            sentiment = self.sentiment_analyzer.analyze_text(message)
-            intent = await self.intent_recognizer.recognize_intent(message)
+            analysis = await self.nlp_service.analyze_text(message)
+            
+            # Adjust personality traits based on sentiment and conversation intent
+            self.personality_traits["enthusiasm"] += analysis["vader_sentiment"]["compound"] * 0.1
+            self.personality_traits["empathy"] += analysis["vader_sentiment"]["pos"] * 0.1
 
-            # Adjust personality traits based on sentiment and intent
-            self.personality_traits["enthusiasm"] += sentiment["vader_sentiment"]["compound"] * 0.1
-            self.personality_traits["empathy"] += sentiment["vader_sentiment"]["pos"] * 0.1
-
-            if intent.lower() in ["joke", "humor"]:
+            if analysis["primary_conversation_intent"].lower() in ["joke", "humor"]:
                 self.personality_traits["humor"] += 0.1
-            elif intent.lower() in ["formal_request", "professional_inquiry"]:
+            elif analysis["primary_conversation_intent"].lower() in ["formal_request", "professional_inquiry"]:
                 self.personality_traits["formality"] += 0.1
 
             # Cap values between -1 and 1
@@ -100,7 +93,7 @@ class AIPersonality:
     async def generate_response(self, user_input: str, context: list[Message]):
         if self.personality_traits:
             await self.analyze_message(user_input)
-        logging.debug(f"Generating AI personality response for input: {user_input}")
+        logging.debug(f"Generating character response for input: {user_input}")
         
         try:
             input_text = self.prepare_input(user_input, context)
@@ -112,6 +105,7 @@ class AIPersonality:
 
             response = await self.lm_client.create_chat_completion(
                 messages=messages,
+                # use env to import model for cleaner code
                 model="mlabonne/AlphaMonarch-7B-GGUF/alphamonarch-7b.Q2_K.gguf",
                 temperature=0.7, # lower for more focused responses
                 max_tokens=150  # adjusted for concise responses
@@ -135,7 +129,7 @@ class AIPersonality:
             return cleaned_response
 
         except Exception as e:
-            logging.error(f"Error generating AI personality response: {str(e)}")
+            logging.error(f"Error generating character response: {str(e)}")
             return Message(
                 role="assistant",
                 content="I apologize, but I am unable to generate a response at the moment.",
@@ -149,6 +143,6 @@ class AIPersonality:
         return user_input
 
     def post_process_response(self, response: str) -> str:
-        if self.ai_personality.character_type != "adaptive" and random.random() < 0.3:
+        if self.character.character_type != "adaptive" and random.random() < 0.3:
             response += f" {random.choice(self.character_details['catchphrases'])}"
         return response

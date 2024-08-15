@@ -1,13 +1,12 @@
 # app/models/entity.py
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, String, ForeignKey
 from sqlalchemy.orm import relationship
-from app.services.db.database import Base
+from .base import BaseModel
 
-class Entity(Base):
-    __tablename__ = "entity"
+class Entity(BaseModel):
+    __tablename__ = "entities"
 
-    id = Column(Integer, primary_key=True, index=True)
     entity_name = Column(String(100), index=True)
-    intent_id = Column(Integer, ForeignKey('intent.id'))
+    conversation_intent_id = Column(ForeignKey('conversation_intents.id'))
 
-    intent = relationship("Intent", back_populates="entities")
+    conversation_intent = relationship("ConverstaionIntent", back_populates="entities")

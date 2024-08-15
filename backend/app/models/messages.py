@@ -1,12 +1,11 @@
 # app/models/messages.py
-from sqlalchemy import JSON, Column, DateTime, Integer, String, Float, ForeignKey
+from sqlalchemy import JSON, Column, DateTime, String, Float, ForeignKey
 from sqlalchemy.orm import relationship
-from app.services.db.database import Base
+from .base import BaseModel
 
-class Message(Base):
+class Message(BaseModel):
     __tablename__ = "messages"
 
-    id = Column(Integer, primary_key=True, index=True)
     role = Column(String(50))
     content = Column(String(2000))
     timestamp = Column(DateTime, index=True)
