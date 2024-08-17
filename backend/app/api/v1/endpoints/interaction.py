@@ -3,8 +3,8 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from typing import List
 from app.schemas.schemas import InteractionCreate, InteractionRead
-from backend.app.services.db.interaction_manager import InteractionManager
-from app.services.db.character_database import AIPersonalityManager
+from app.services.db.interaction_manager import InteractionManager
+from app.services.db.character_database import CharacterDatabase
 from app.core.dependencies import get_db
 from sqlalchemy.orm import Session
 
@@ -13,21 +13,21 @@ router = APIRouter()
 def get_interaction_manager(db: Session = Depends(get_db)):
     return InteractionManager(db)
 
-def get_ai_personality_manager(db: Session = Depends(get_db)):
-    return AIPersonalityManager(db)
+def get_character_database(db: Session = Depends(get_db)):
+    return CharacterDatabase(db)
 
 @router.post("", response_model=InteractionRead, status_code=status.HTTP_201_CREATED)
 def create_interaction(
     interaction: InteractionCreate,
     interaction_manager: InteractionManager = Depends(get_interaction_manager),
-    ai_personality_manager: AIPersonalityManager = Depends(get_ai_personality_manager)
+    character_database: CharacterDatabase = Depends(get_character_database)
 ):
-    if interaction.ai_personality_id is None or not ai_personality_manager.get_ai_personality_by_id(interaction.ai_personality_id):
-        interaction.ai_personality_id = ai_personality_manager.get_or_create_default_ai_personality()
+    if interaction.character_id is None or not character_database.get_character_by_id(interaction.character_id):
+        interaction.character_id = character_database.get_or_create_default_character()
     
     created_interaction = interaction_manager.create_interaction(
         user_id=interaction.user_id,
-        ai_personality_id=interaction.ai_personality_id,
+        character_id=interaction.character_id,
         interaction_type=interaction.interaction_type
     )
     if not created_interaction:

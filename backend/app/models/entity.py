@@ -9,4 +9,4 @@ class Entity(BaseModel):
     entity_name = Column(String(100), index=True)
     conversation_intent_id = Column(ForeignKey('conversation_intents.id'))
 
-    conversation_intent = relationship("ConverstaionIntent", back_populates="entities")
+    conversation_intent = relationship("ConversationIntent", back_populates="entities")

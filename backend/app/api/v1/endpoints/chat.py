@@ -7,7 +7,7 @@ from app.services.ai.lm_client import LMStudioClient
 from app.services.chat.context_manager import ChatContextManager
 from app.services.nlp.casual_conversation_handler import CasualConversation
 from app.services.ai.personalized_chatbot import PersonalizedChatbot
-from backend.app.services.db.interaction_manager import InteractionManager
+from app.services.db.interaction_manager import InteractionManager
 from app.services.db.character_database import CharacterDatabase
 from app.services.ai.comfy_ui_service import ComfyUIService
 from app.core.dependencies import (

@@ -21,8 +21,14 @@ from app.services.db.conversation_intent_manager import ConversationIntentManage
 from app.services.nlp.nlp_service import NLPService
 from app.services.chat.chat_response_handler import ChatResponseHandler
 
+# ComfyUIService instance
+_comfy_ui_service = None
+
 def get_comfy_ui_service() -> ComfyUIService:
-    return ComfyUIService()
+    global _comfy_ui_service
+    if _comfy_ui_service is None:
+        _comfy_ui_service = ComfyUIService()
+    return _comfy_ui_service
 
 async def get_prediction(input_text: str) -> Optional[str]:
     node_script_path = os.path.join(os.path.dirname(__file__), 'lm_client.ts')

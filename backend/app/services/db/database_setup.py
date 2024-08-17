@@ -32,10 +32,28 @@ def get_db():
 
 def create_tables() -> None:
     try:
+        # Import all models to ensure they are registered
+        from app.models.user import User
+        from app.models.character import Character
+        from app.models.messages import Message
+        from app.models.image import GeneratedImage
+        from app.models.conversation_intent import ConversationIntent
+        from app.models.interaction import Interaction
+        from app.models.entity import Entity
+        from app.models.feedback import Feedback
+        from app.models.session import Session
+        from app.models.user_preference import UserPreference
+        
+        # This will create all tables
         Base.metadata.create_all(bind=engine)
-        logger.info("Database tables created successfully.")
+        
+        # Explicitly configure all mappers
+        from sqlalchemy.orm import configure_mappers
+        configure_mappers()
+        
+        logger.info("Database tables created and mappers configured successfully.")
     except Exception as e:
-        logger.error(f"Error creating database tables: {e}")
+        logger.error(f"Error creating database tables or configuring mappers: {e}")
         raise
 
 def init_db() -> None:

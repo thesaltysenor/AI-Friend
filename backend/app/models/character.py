@@ -6,7 +6,7 @@ from .base import BaseModel
 class Character(BaseModel):
     __tablename__ = "characters"
 
-    name = Column(String(255))
+    name = Column(String(255), nullable=False)
     description = Column(Text)
     personality_traits = Column(Text)
     available = Column(Boolean, default=True)

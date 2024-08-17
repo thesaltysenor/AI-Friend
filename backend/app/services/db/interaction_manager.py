@@ -6,14 +6,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from app.models.interaction import Interaction
 from app.models.user import User
-from app.services.db.character_database import AIPersonalityManager
+from app.services.db.character_database import CharacterDatabase
 
 class InteractionManager:
     def __init__(self, db: Session):
         self.db = db
-        self.ai_personality_manager = AIPersonalityManager(db)
+        self.character_database = CharacterDatabase(db)
 
-    def create_interaction(self, user_id: str, ai_personality_id: Optional[int], interaction_type: str) -> Optional[Interaction]:
+    def create_interaction(self, user_id: str, character_id: Optional[int], interaction_type: str) -> Optional[Interaction]:
         try:
             # Check if the user exists
             user = self.db.query(User).filter(User.user_id == user_id).first()
@@ -21,14 +21,14 @@ class InteractionManager:
                 logging.error(f"User with id {user_id} does not exist")
                 return None
 
-            # If ai_personality_id is not provided, use the default (adaptive) one
-            if ai_personality_id is None:
-                ai_personality_id = self.ai_personality_manager.get_or_create_default_ai_personality()
+            # If character_id is not provided, use the default (adaptive) one
+            if character_id is None:
+                character_id = self.character_database.get_or_create_default_character()
 
             # Create the interaction
             new_interaction = Interaction(
                 user_id=user_id,
-                ai_personality_id=ai_personality_id,
+                character_id=character_id,
                 interaction_type=interaction_type
             )
             self.db.add(new_interaction)

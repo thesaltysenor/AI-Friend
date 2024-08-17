@@ -1,7 +1,7 @@
 # ai-friend/backend/app/main.py
 
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from app.api.v1 import api_router
@@ -9,9 +9,9 @@ from app.core.config import settings
 from app.services.chat.context_manager import ChatContextManager
 from app.services.background_tasks import start_background_tasks
 from contextlib import asynccontextmanager
-from app.services.db.database_setup import create_tables, engine, SessionLocal
+from app.services.db.database_setup import init_db, get_db
 from app.services.db.character_database import CharacterDatabase
-from app.services.ai.comfy_ui_service import comfy_ui_service
+from app.core.dependencies import get_comfy_ui_service
 import nltk
 
 logging.basicConfig(level=logging.DEBUG)
@@ -32,20 +32,12 @@ async def lifespan(app: FastAPI):
         await shutdown_tasks()
 
 async def startup_tasks():
-    # Test database connection
-    try:
-        with engine.connect() as connection:
-            result = connection.execute(text("SELECT 1"))
-            logger.debug(f"Database connection test result: {result.fetchone()}")
-    except Exception as e:
-        logger.error(f"Failed to connect to the database: {e}")
-        raise
-
-    create_tables()
+    # Initialize the database
+    init_db()
     
     # Populate characters
     try:
-        db = SessionLocal()
+        db = next(get_db())
         character_database = CharacterDatabase(db)
         character_database.populate_characters()
         character_database.get_or_create_default_character()
@@ -55,6 +47,7 @@ async def startup_tasks():
     finally:
         db.close()
     
+    comfy_ui_service = get_comfy_ui_service()
     await comfy_ui_service.connect()
     await start_background_tasks(context_manager)
 
@@ -66,6 +59,7 @@ async def startup_tasks():
 
 async def shutdown_tasks():
     await context_manager.shutdown()
+    comfy_ui_service = get_comfy_ui_service()
     await comfy_ui_service.disconnect()
     logger.debug("Shutting down application lifespan.")
 

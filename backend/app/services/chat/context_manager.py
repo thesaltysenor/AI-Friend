@@ -174,3 +174,7 @@ class ChatContextManager:
         cleaned_response = clean_ai_response(response_content)
         processed_response = post_process_response(cleaned_response)
         return Message(role="assistant", content=processed_response)
+    
+    async def shutdown(self):
+        # Implement any cleanup logic here
+        pass
