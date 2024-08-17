@@ -5,10 +5,10 @@ export const useImageService = () => {
   const isGenerating = ref(false);
   const generatedImageUrl = ref('');
 
-  const generateImage = async (prompt: string, aiPersonalityId?: number) => {
+  const generateImage = async (prompt: string, characterId?: number) => {
     isGenerating.value = true;
     try {
-      const response = await api.post('/image/generate', { prompt, ai_personality_id: aiPersonalityId });
+      const response = await api.post('/image/generate', { prompt, character_id: characterId });
       return response.data.prompt_id;
     } catch (error) {
       console.error('Error generating image:', error);

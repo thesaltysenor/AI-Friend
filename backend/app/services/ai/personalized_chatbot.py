@@ -13,19 +13,18 @@ from app.services.characters.character_details import get_character_details
 from app.services.nlp.nlp_service import NLPService
 
 class PersonalizedChatbot:
-    def __init__(self, character_id=None):
-        self.character_details = CharacterDatabase()
-        self.nlp_service = NLPService()
+    def __init__(self, character_id=None, character_database=None):
+        self.character_database = character_database
         
         if character_id is None or character_id == 0:
-            character_id = self.character_details.get_or_create_default_character()
+            character_id = self.character_database.get_or_create_default_character()
         
-        self.character = self.character_details.get_character_by_id(character_id)
+        self.character = self.character_database.get_character_by_id(character_id)
         
         if self.character is None:
             logging.warning(f"No character found for id: {character_id}. Creating default adaptive personality.")
-            character_id = self.character_details.get_or_create_default_character()
-            self.character = self.character_details.get_character_by_id(character_id)
+            character_id = self.character_database.get_or_create_default_character()
+            self.character = self.character_database.get_character_by_id(character_id)
         
         self.character_details = get_character_details(self.character.character_type)
         self.lm_client = LMStudioClient()

@@ -9,7 +9,7 @@ const API_URL = 'http://localhost:8000/api/v1';
 export const ChatService = {
   async getCharacters(): Promise<Character[]> {
     try {
-      const response = await axios.get<Character[]>(`${API_URL}/characters`);
+      const response = await axios.get<Character[]>(`${API_URL}/character`);
       return [DEFAULT_CHARACTER, ...response.data];
     } catch (error) {
       console.error('Error fetching characters:', error);
@@ -45,9 +45,9 @@ export const ChatService = {
     }
   },
 
-  async generateImage(prompt: string, aiPersonalityId: number): Promise<string> {
+  async generateImage(prompt: string, characterId: number): Promise<string> {
     try {
-      const response = await axios.post(`${API_URL}/image/generate`, { prompt, ai_personality_id: aiPersonalityId });
+      const response = await axios.post(`${API_URL}/image/generate`, { prompt, ai_personality_id: characterId });
       return response.data.prompt_id;
     } catch (error) {
       console.error('Error generating image:', error);

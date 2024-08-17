@@ -1,8 +1,9 @@
 # app/api/v1/endpoints/chat.py
 
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.schemas import ChatInput, ChatInputMessage, ImageGenerationRequest, ImageGenerationResponse
+from app.schemas import ChatInput, ChatInputMessage, ImageGenerationRequest, ImageGenerationResponse, MessageRead
 from app.services.ai.lm_client import LMStudioClient
 from app.services.chat.context_manager import ChatContextManager
 from app.services.nlp.casual_conversation_handler import CasualConversation
@@ -55,10 +56,10 @@ async def chat_endpoint(
         context = context_manager.get_context(user_id)
 
         # Get or create character
-        character_id = chat_input.ai_personality_id or character_database.get_or_create_default_character()
-        personalized_chatbot = PersonalizedChatbot(character_id)
+        character_id = chat_input.character_id or character_database.get_or_create_default_character()
+        personalized_chatbot = PersonalizedChatbot(character_id, character_database)
 
-        # Generate response
+         # Generate response
         if GENERATE_IMAGE in user_message.lower():
             return await generate_image(user_message, character_id, comfy_ui)
         else:
@@ -69,22 +70,32 @@ async def chat_endpoint(
                 personalized_chatbot
             )
 
-        # Update context and record interaction
-        context_manager.update_context(user_id, [generated_response])
+        # Create a MessageRead object
+        message_read = MessageRead(
+            id=str(uuid.uuid4()),
+            role=generated_response.role,
+            content=generated_response.content,
+            user_id=generated_response.user_id,
+            timestamp=generated_response.timestamp,
+            relevance=generated_response.relevance
+        )
+
+         # Update context and record interaction
+        context_manager.update_context(user_id, [message_read])
         interaction_manager.create_interaction(user_id, character_id, "chat_completion")
 
         # Get adaptive traits
         character = character_database.get_character_by_id(character_id)
         adaptive_traits = character.personality_traits if character else None
 
-        return format_chat_response(chat_input.model, generated_response, adaptive_traits)
+        return format_chat_response(chat_input.model, message_read.content, adaptive_traits)
 
     except Exception as e:
         logging.error(f"API call failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 async def generate_image(user_message: str, character_id: int, comfy_ui: ComfyUIService) -> ImageGenerationResponse:
-    image_request = ImageGenerationRequest(prompt=extract_image_prompt(user_message), ai_personality_id=character_id)
+    image_request = ImageGenerationRequest(prompt=extract_image_prompt(user_message), character_id=character_id)
     try:
         prompt_id = await comfy_ui.generate_image(image_request.prompt)
         return ImageGenerationResponse(

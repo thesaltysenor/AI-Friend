@@ -106,11 +106,11 @@ export const useChatStore = defineStore('chat', {
         this.isWaitingForAI = false;
       }
     },
-    async generateImage(prompt: string, aiPersonalityId: number) {
+    async generateImage(prompt: string, characterId: number) {
       this.isLoading = true;
       try {
         const imageService = useImageService();
-        const promptId = await imageService.generateImage(prompt, aiPersonalityId);
+        const promptId = await imageService.generateImage(prompt, characterId);
         const imageUrl = await imageService.getImage(promptId);
         this.addMessage(new Message({
           role: 'assistant',

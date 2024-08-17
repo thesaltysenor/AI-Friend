@@ -8,7 +8,7 @@ const API_URL = 'http://localhost:8000/api/v1';
 export const CharacterService = {
   async getCharacters(): Promise<Character[]> {
     try {
-      const response = await axios.get<any[]>(`${API_URL}/ai_personalities`);
+      const response = await axios.get<any[]>(`${API_URL}/character`);
       console.log('API response:', response.data);
       const characters = response.data.map(char => ({
         id: char.id,

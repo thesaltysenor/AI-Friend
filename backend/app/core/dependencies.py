@@ -69,7 +69,7 @@ def get_context_manager():
 def get_casual_conversation_handler():
     return CasualConversation()
 
-def get_character_database(db: Session = Depends(get_db)):
+def get_character_database(db: Session = Depends(get_db)) -> CharacterDatabase:
     return CharacterDatabase(db)
 
 def get_user_manager(db: Session = Depends(get_db)):

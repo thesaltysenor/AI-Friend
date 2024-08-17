@@ -129,7 +129,7 @@ class MessageCreate(MessageBase):
     pass
 
 class MessageRead(MessageBase):
-    id: int
+    id: str
     timestamp: float
 
 class MessageUpdate(BaseSchema):
