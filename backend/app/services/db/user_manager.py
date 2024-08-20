@@ -1,8 +1,10 @@
 from typing import Optional, List
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from app.models.user import User
 from app.schemas.schemas import UserCreate
 from app.core.security import get_password_hash, verify_password
+import logging
 
 class UserManager:
     def __init__(self, db: Session):
@@ -12,9 +14,25 @@ class UserManager:
         hashed_password = get_password_hash(user.password)
         db_user = User(username=user.username, email=user.email, hashed_password=hashed_password)
         self.db.add(db_user)
+        self.db.flush()
         self.db.commit()
         self.db.refresh(db_user)
         return db_user
+
+    def get_or_create_test_user(self, user_id: str, username: str, email: str, password: str) -> Optional[User]:
+        user = self.get_user_by_id(user_id)
+        if not user:
+            try:
+                user_create = UserCreate(username=username, email=email, password=password)
+                user = self.create_user(user_create)
+                logging.info(f"Created test user with id: {user_id}")
+            except IntegrityError:
+                self.db.rollback()
+                user = self.get_user_by_username(username)
+                if not user:
+                    user = self.get_user_by_email(email)
+                logging.info(f"Retrieved existing test user with id: {user.user_id if user else 'Unknown'}")
+        return user
 
     def get_user_by_id(self, user_id: str) -> Optional[User]:
         return self.db.query(User).filter(User.user_id == user_id).first()

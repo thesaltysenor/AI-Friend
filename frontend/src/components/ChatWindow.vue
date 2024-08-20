@@ -7,7 +7,7 @@
       <p>{{ characterStore.selectedCharacter.description }}</p>
     </div>
     <div class="chat-history" ref="chatHistory">
-      <div v-for="message in chatStore.messages" :key="message.timestamp"
+      <div v-for="message in formattedMessages" :key="message.timestamp"
         :class="['message', message.role === 'user' ? 'user-message' : 'ai-message']">
         <div class="message-content">{{ message.content }}</div>
         <div class="message-timestamp">{{ formatTimestamp(message.timestamp) }}</div>
@@ -16,12 +16,11 @@
     <div class="chat-input">
       <input type="text" v-model="newMessage" @keyup.enter="sendMessage" :disabled="chatStore.isWaitingForAI"
         placeholder="Type your message...">
-      <button @click="sendMessage" :disabled="chatStore.isWaitingForAI">
+      <button @click="sendMessage" :disabled="!canSendMessage">
         {{ chatStore.isWaitingForAI ? 'Waiting...' : 'Send' }}
       </button>
     </div>
   </div>
-  <ImageGenerator :aiPersonalityId="characterStore.selectedCharacter?.id" @image-generated="handleImageGenerated" />
 </template>
 
 <script lang="ts">
@@ -30,7 +29,6 @@ import { useRoute } from 'vue-router';
 import { useCharacterStore, useChatStore } from '@/store';
 import Message from '@/services/MessageService';
 import { handleError } from '@/utils/errorHandler';
-import ImageGenerator from '@/components/ImageGenerator.vue';
 
 export default defineComponent({
   name: 'ChatWindow',
@@ -42,6 +40,7 @@ export default defineComponent({
     const chatHistory = ref<HTMLElement | null>(null);
 
     const getCharacterImage = (character: any) => {
+      console.log('Getting character image for:', character);
       return `/images/${character.characterType.toLowerCase()}.png`;
     };
 
@@ -49,18 +48,19 @@ export default defineComponent({
       return new Date(timestamp).toLocaleTimeString();
     };
 
-    const handleImageGenerated = (imageUrl: string) => {
-      chatStore.addMessage(new Message({
-        role: 'assistant',
-        content: `Here's the image you requested: ${imageUrl}`,
-        timestamp: Date.now(),
+    const formattedMessages = computed(() => {
+      return chatStore.messages.map(message => ({
+        ...message,
+        content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content)
       }));
-    };
+    });
 
     const canSendMessage = computed(() => !chatStore.isWaitingForAI && newMessage.value.trim() !== '');
 
     const sendMessage = async () => {
+      console.log('Attempting to send message');
       if (canSendMessage.value && characterStore.selectedCharacter) {
+        console.log('Conditions met for sending message');
         const userMessage = new Message({
           role: 'user',
           content: newMessage.value,
@@ -68,41 +68,56 @@ export default defineComponent({
           user_id: 'test_user'
         });
 
-        // Store original message in case we need to restore it on error
-        // const messageContent = newMessage.value;
-
+        console.log('Created user message:', userMessage);
         newMessage.value = ''; // Clear input immediately
 
         try {
+          console.log('Sending message to chat store');
           await chatStore.sendMessage(userMessage, characterStore.selectedCharacter.id);
         } catch (error) {
+          console.error('Error in sendMessage:', error);
           handleError(error, 'Failed to send message');
-          // Optionally, restore the message if sending fails
-          // newMessage.value = messageContent;
         }
+      } else {
+        console.log('Cannot send message. canSendMessage:', canSendMessage.value, 'selectedCharacter:', characterStore.selectedCharacter);
       }
     };
 
     const scrollToBottom = () => {
+      console.log('Scrolling to bottom');
       if (chatHistory.value) {
         chatHistory.value.scrollTop = chatHistory.value.scrollHeight;
       }
     };
 
     onMounted(async () => {
+      console.log('ChatWindow mounted');
       const characterId = Number(route.params.characterId);
+      console.log('Character ID from route:', characterId);
       if (characterId) {
+        console.log('Fetching characters');
         await characterStore.fetchCharacters();
         const character = characterStore.characters.find(c => c.id === characterId);
         if (character) {
+          console.log('Setting selected character:', character);
           characterStore.setSelectedCharacter(character);
           chatStore.clearMessages();
+        } else {
+          console.log('Character not found for ID:', characterId);
         }
+      } else {
+        console.log('No character ID in route');
       }
       scrollToBottom();
     });
 
-    watch(() => chatStore.messages, () => {
+    watch(() => chatStore.messages, (newMessages) => {
+      console.log('Chat messages updated:', newMessages);
+      newMessages.forEach((message, index) => {
+        console.log(`Message ${index}:`, message);
+        console.log(`Message ${index} content type:`, typeof message.content);
+        console.log(`Message ${index} content:`, message.content);
+      });
       nextTick(() => {
         scrollToBottom();
       });
@@ -117,7 +132,7 @@ export default defineComponent({
       getCharacterImage,
       formatTimestamp,
       chatHistory,
-      handleImageGenerated
+      formattedMessages
     };
   },
 });

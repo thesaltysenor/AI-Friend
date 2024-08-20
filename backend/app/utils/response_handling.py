@@ -1,4 +1,4 @@
-# app/response_handling.py
+# app/utils/response_handling.py
 
 import logging
 

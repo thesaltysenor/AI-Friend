@@ -1,10 +1,30 @@
 // src/services/ChatService.ts
+
 import Message from './MessageService';
 import axios from 'axios';
-import {DEFAULT_CHARACTER, type Character } from '@/types/Character';
+import { DEFAULT_CHARACTER, type Character } from '@/types/Character';
 
-//address for .env usage
 const API_URL = 'http://localhost:8000/api/v1';
+
+interface LMStudioResponse {
+  id: string;
+  object: string;
+  created: number;
+  model: string;
+  choices: Array<{
+    index: number;
+    message: {
+      role: string;
+      content: string;
+    };
+    finish_reason: string;
+  }>;
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+}
 
 export const ChatService = {
   async getCharacters(): Promise<Character[]> {
@@ -17,28 +37,29 @@ export const ChatService = {
     }
   },
 
-  async postChatMessage(messages: Message[], characterId: number): Promise<any> {
+  async postChatMessage(messages: Message[], characterId: number): Promise<Message> {
     const payload = {
-      // import CHOSEN_LM_MODEL from .env
       model: 'mlabonne/AlphaMonarch-7B-GGUF/alphamonarch-7b.Q2_K.gguf',
       messages: messages.map((message) => message.model_dump()),
       temperature: 0.7,
       max_tokens: 50,
-      ai_personality_id: characterId
+      character_id: characterId
     };
     try {
-      const response = await axios.post(`${API_URL}/chat/completions`, payload, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await axios.post<LMStudioResponse>(`${API_URL}/chat/completions`, payload);
       console.log('Raw response from backend:', response.data);
-      // Extract the nested content
-      const content = response.data.choices[0].message.content.content;
-      return {
-        content: content,
-        adaptive_traits: response.data.adaptive_traits
-      };
+      
+      if (response.data.choices && response.data.choices.length > 0) {
+        const aiMessage = response.data.choices[0].message;
+        return new Message({
+          role: aiMessage.role,
+          content: aiMessage.content,
+          timestamp: response.data.created * 1000, // Convert to milliseconds
+          user_id: 'assistant'
+        });
+      } else {
+        throw new Error('Invalid response format from server');
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       throw error;

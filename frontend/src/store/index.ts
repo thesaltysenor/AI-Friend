@@ -69,36 +69,28 @@ export const useChatStore = defineStore('chat', {
   }),
   actions: {
     addMessage(message: Message) {
+      console.log('Adding message to store:', message);
       this.messages.push(message);
     },
     clearMessages() {
       this.messages = [];
     },
     async sendMessage(message: Message, characterId: number) {
-      if (this.isWaitingForAI) return; // Prevent sending if waiting for AI
+      if (this.isWaitingForAI) return;
       
       this.isLoading = true;
       this.isWaitingForAI = true;
       try {
-        this.addMessage(message); // Add user message immediately
-        const response = await ChatService.postChatMessage([message], characterId);
-        console.log('Response in store:', response);
+        console.log('Adding user message:', message);
+        this.addMessage(message);
+        console.log('Sending message to ChatService:', message);
+        const aiMessage = await ChatService.postChatMessage([message], characterId);
+        console.log('AI message received:', aiMessage);
         
-        // Create and add AI message
-        const aiMessage = new Message({
-          role: 'assistant',
-          content: response.content,
-          timestamp: Date.now(),
-          user_id: 'assistant'
-        });
-        console.log('AI message created:', aiMessage);
         this.addMessage(aiMessage);
-
-        if (response.adaptive_traits) {
-          useCharacterStore().updateAdaptiveTraits(response.adaptive_traits);
-        }
         return aiMessage;
       } catch (error) {
+        console.error('Error in sendMessage:', error);
         handleError(error, 'Error sending message');
         throw error;
       } finally {
@@ -106,6 +98,7 @@ export const useChatStore = defineStore('chat', {
         this.isWaitingForAI = false;
       }
     },
+
     async generateImage(prompt: string, characterId: number) {
       this.isLoading = true;
       try {

@@ -4,7 +4,7 @@ import logging
 import datetime
 import random
 from app.models.messages import Message
-from app.schemas import ChatInputMessage
+from app.schemas.schemas import ChatInputMessage
 from app.services.ai.lm_client import LMStudioClient
 from app.utils.text_cleaning import clean_ai_response
 from app.utils.text_processing import post_process_response
@@ -15,6 +15,7 @@ from app.services.nlp.nlp_service import NLPService
 class PersonalizedChatbot:
     def __init__(self, character_id=None, character_database=None):
         self.character_database = character_database
+        self.nlp_service = NLPService()
         
         if character_id is None or character_id == 0:
             character_id = self.character_database.get_or_create_default_character()
@@ -93,7 +94,7 @@ class PersonalizedChatbot:
         if self.personality_traits:
             await self.analyze_message(user_input)
         logging.debug(f"Generating character response for input: {user_input}")
-        
+    
         try:
             input_text = self.prepare_input(user_input, context)
             messages = [
@@ -104,39 +105,33 @@ class PersonalizedChatbot:
 
             response = await self.lm_client.create_chat_completion(
                 messages=messages,
-                # use env to import model for cleaner code
                 model="mlabonne/AlphaMonarch-7B-GGUF/alphamonarch-7b.Q2_K.gguf",
-                temperature=0.7, # lower for more focused responses
-                max_tokens=150  # adjusted for concise responses
+                temperature=0.7,
+                max_tokens=150
             )
 
             # Clean the response content
             cleaned_content = clean_ai_response(response.content)
             processed_content = post_process_response(cleaned_content)
             processed_content = self.post_process_response(processed_content)
-            
+        
             # Create a new Message object with the cleaned content
             cleaned_response = Message(
                 role=response.role,
                 content=processed_content,
                 user_id=response.user_id,
                 timestamp=response.timestamp,
-                relevance=response.relevance,
-                adaptive_traits=self.personality_traits if self.personality_traits else None
+                relevance=response.relevance
             )
+            logging.debug(f"Cleaned response object: {cleaned_response}")
+            logging.debug(f"Cleaned response content: {cleaned_response.content}")
+            logging.debug(f"Cleaned response content type: {type(cleaned_response.content)}")
 
-            return cleaned_response
+            return cleaned_response.content  # Return the content, not the Message object
 
         except Exception as e:
             logging.error(f"Error generating character response: {str(e)}")
-            return Message(
-                role="assistant",
-                content="I apologize, but I am unable to generate a response at the moment.",
-                user_id="assistant",
-                timestamp=datetime.datetime.now().timestamp(),
-                relevance=1.0,
-                adaptive_traits=self.personality_traits if self.personality_traits else None
-            )
+            return "I apologize, but I am unable to generate a response at the moment."
 
     def prepare_input(self, user_input: str, context: list[Message]) -> str:
         return user_input
