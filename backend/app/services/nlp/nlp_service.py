@@ -1,5 +1,5 @@
-# app/services/nlp/nlp_service.py
-
+# ai-friend/backend/app/services/nlp/nlp_service.py
+from app.core.exceptions import NLPException
 import logging
 from typing import List, Tuple, Dict, Any
 import spacy
@@ -13,35 +13,61 @@ class NLPService:
         self.nltk_analyzer = NLTKAnalyzer()
         self.vader_analyzer = VaderAnalyzer()
 
+    async def analyze_sentiment(self, text: str) -> Dict[str, Any]:
+        try:
+            nltk_sentiment: dict = self.nltk_analyzer.polarity_scores(text)
+            vader_sentiment: dict = self.vader_analyzer.polarity_scores(text)
+
+            compound_score = vader_sentiment['compound']
+            overall_sentiment = "positive" if compound_score >= 0.05 else "negative" if compound_score <= -0.05 else "neutral"
+
+            return {
+                "nltk_sentiment": nltk_sentiment,
+                "vader_sentiment": vader_sentiment,
+                "overall_sentiment": overall_sentiment
+            }
+        except Exception as e:
+            logging.exception(f"Error during sentiment analysis: {str(e)}")
+            raise NLPException("Error during sentiment analysis") from e
+
+    async def extract_entities(self, text: str) -> List[Tuple[str, str]]:
+        try:
+            doc = self.nlp(text)
+            entities: List[Tuple[str, str]] = [(ent.text, ent.label_) for ent in doc.ents]
+            return entities
+        except Exception as e:
+            logging.exception(f"Error during named entity recognition: {str(e)}")
+            raise NLPException("Error during named entity recognition") from e
+
+    async def extract_topics(self, text: str) -> List[str]:
+        # Implement topic extraction logic
+        #   This is a placeholder implementation
+        try:
+            return ["machine learning", "natural language processing"]
+        except Exception as e:
+            logging.exception(f"Error during topic extraction: {str(e)}")
+            raise NLPException("Error during topic extraction") from e
+
     async def analyze_text(self, text: str) -> Dict[str, Any]:
         try:
             doc = self.nlp(text)
             tokens: List[Tuple[str, str]] = [(token.text, token.pos_) for token in doc]
-            nltk_sentiment: dict = self.nltk_analyzer.polarity_scores(text)
-            vader_sentiment: dict = self.vader_analyzer.polarity_scores(text)
-            entities: List[Tuple[str, str]] = [(ent.text, ent.label_) for ent in doc.ents]
-            
-            # Determine overall sentiment
-            compound_score = vader_sentiment['compound']
-            if compound_score >= 0.05:
-                overall_sentiment = "positive"
-            elif compound_score <= -0.05:
-                overall_sentiment = "negative"
-            else:
-                overall_sentiment = "neutral"
+
+            sentiment_results = await self.analyze_sentiment(text)
+            entities = await self.extract_entities(text)
+            topics = await self.extract_topics(text)
 
             return {
                 "tokens": tokens,
-                "nltk_sentiment": nltk_sentiment,
-                "vader_sentiment": vader_sentiment,
-                "overall_sentiment": overall_sentiment,
+                "sentiment": sentiment_results,
                 "entities": entities,
-                "primary_conversation_intent": self.extract_primary_intent(doc),
+                "topics": topics,
+                "conversation_intent": self.extract_primary_intent(doc),
                 "action_items": self.extract_action_items(doc)
             }
         except Exception as e:
             logging.exception(f"Error during text analysis: {str(e)}")
-            raise
+            raise NLPException("Error during text analysis") from e
 
     def extract_primary_intent(self, doc: spacy.tokens.Doc) -> str:
         # Implement intent extraction logic

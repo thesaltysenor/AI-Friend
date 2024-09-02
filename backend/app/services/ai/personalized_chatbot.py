@@ -1,8 +1,10 @@
-# app/services/ai/personalized_chatbot.py
 
+# ai-friend/backend/app/services/ai/personalized_chatbot.py
+from app.core.exceptions import LMStudioException, NLPException, CharacterDatabaseException
 import logging
 import datetime
 import random
+from fastapi import Depends
 from app.models.messages import Message
 from app.schemas.schemas import ChatInputMessage
 from app.services.ai.lm_client import LMStudioClient
@@ -13,9 +15,10 @@ from app.services.characters.character_details import get_character_details
 from app.services.nlp.nlp_service import NLPService
 
 class PersonalizedChatbot:
-    def __init__(self, character_id=None, character_database=None):
+    def __init__(self, character_id=None, character_database=Depends(CharacterDatabase), nlp_service=Depends(NLPService), lm_client=Depends(LMStudioClient)):
         self.character_database = character_database
-        self.nlp_service = NLPService()
+        self.nlp_service = nlp_service
+        self.lm_client = lm_client
         
         if character_id is None or character_id == 0:
             character_id = self.character_database.get_or_create_default_character()
@@ -28,7 +31,6 @@ class PersonalizedChatbot:
             self.character = self.character_database.get_character_by_id(character_id)
         
         self.character_details = get_character_details(self.character.character_type)
-        self.lm_client = LMStudioClient()
         
         # Always initialize personality traits, defaulting to adaptive
         self.personality_traits = {
@@ -90,45 +92,67 @@ class PersonalizedChatbot:
             for trait in self.personality_traits:
                 self.personality_traits[trait] = max(-1, min(1, self.personality_traits[trait]))
 
+    async def generate_raw_response(self, user_input: str, context: list[Message]) -> str:
+        input_text = self.prepare_input(user_input, context)
+        messages = [
+            ChatInputMessage(role="system", content=self.get_system_prompt(), user_id="system"),
+            *[ChatInputMessage(role=msg.role, content=msg.content, user_id=msg.user_id) for msg in context],
+            ChatInputMessage(role="user", content=input_text, user_id="user")
+        ]  
+
+        response = await self.lm_client.create_chat_completion(
+            messages=messages,
+            model="mlabonne/AlphaMonarch-7B-GGUF/alphamonarch-7b.Q2_K.gguf",
+            temperature=0.7,
+            max_tokens=150
+        )
+        return response.content
+
+    def clean_response(self, raw_response: str) -> str:
+        cleaned_content = clean_ai_response(raw_response)
+        processed_content = post_process_response(cleaned_content)
+        return self.post_process_response(processed_content)
+
+    def create_message_object(self, role: str, content: str, user_id: str, timestamp: float, relevance: float) -> Message:
+        return Message(
+            role=role,
+            content=content,
+            user_id=user_id,
+            timestamp=timestamp,
+            relevance=relevance
+        )
+
     async def generate_response(self, user_input: str, context: list[Message]):
         if self.personality_traits:
             await self.analyze_message(user_input)
         logging.debug(f"Generating character response for input: {user_input}")
     
         try:
-            input_text = self.prepare_input(user_input, context)
-            messages = [
-                ChatInputMessage(role="system", content=self.get_system_prompt(), user_id="system"),
-                *[ChatInputMessage(role=msg.role, content=msg.content, user_id=msg.user_id) for msg in context],
-                ChatInputMessage(role="user", content=input_text, user_id="user")
-            ]
-
-            response = await self.lm_client.create_chat_completion(
-                messages=messages,
-                model="mlabonne/AlphaMonarch-7B-GGUF/alphamonarch-7b.Q2_K.gguf",
-                temperature=0.7,
-                max_tokens=150
-            )
-
-            # Clean the response content
-            cleaned_content = clean_ai_response(response.content)
-            processed_content = post_process_response(cleaned_content)
-            processed_content = self.post_process_response(processed_content)
+            raw_response = await self.generate_raw_response(user_input, context)
+            cleaned_response = self.clean_response(raw_response)
         
-            # Create a new Message object with the cleaned content
-            cleaned_response = Message(
-                role=response.role,
-                content=processed_content,
-                user_id=response.user_id,
-                timestamp=response.timestamp,
-                relevance=response.relevance
+            message_object = self.create_message_object(
+                role="assistant",
+                content=cleaned_response,
+                user_id="assistant",
+                timestamp=datetime.datetime.now().timestamp(),
+                relevance=1.0
             )
-            logging.debug(f"Cleaned response object: {cleaned_response}")
-            logging.debug(f"Cleaned response content: {cleaned_response.content}")
-            logging.debug(f"Cleaned response content type: {type(cleaned_response.content)}")
+            logging.debug(f"Cleaned response object: {message_object}")
+            logging.debug(f"Cleaned response content: {message_object.content}")
+            logging.debug(f"Cleaned response content type: {type(message_object.content)}")
 
-            return cleaned_response.content  # Return the content, not the Message object
+            return message_object.content
 
+        except LMStudioException as e:
+            logging.error(f"Error from LM Studio: {str(e)}")
+            return "I apologize, but I am experiencing difficulties generating a response. Please try again later."
+        except NLPException as e:
+            logging.error(f"Error during NLP processing: {str(e)}")
+            return "I apologize, but I am having trouble understanding your message. Please try rephrasing it."
+        except CharacterDatabaseException as e:
+            logging.error(f"Error retrieving character details: {str(e)}")
+            return "I apologize, but I am unable to access my character information at the moment. Please try again later."
         except Exception as e:
             logging.error(f"Error generating character response: {str(e)}")
             return "I apologize, but I am unable to generate a response at the moment."

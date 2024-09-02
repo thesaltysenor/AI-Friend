@@ -1,5 +1,7 @@
-# app/api/v1/endpoints/chat.py
-
+# ai-friend/backend/app/api/v1/endpoints/chat.py
+from pydantic import ValidationError
+from app.core.exceptions import CharacterDatabaseException, LMStudioException, ComfyUIException
+from app.core.config import settings
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -12,7 +14,7 @@ from app.services.db.interaction_manager import InteractionManager
 from app.services.db.character_database import CharacterDatabase
 from app.services.ai.comfy_ui_service import ComfyUIService
 from app.services.db.user_manager import UserManager
-from app.models.messages import Message
+
 from app.core.dependencies import (
     get_db,
     get_comfy_ui_service,
@@ -33,103 +35,7 @@ router = APIRouter()
 GENERATE_IMAGE = "generate image"
 DEFAULT_TEST_USER_ID = "test_user_001"
 
-@router.post("/completions", response_model=Dict[str, Any])
-async def chat_endpoint(
-    chat_input: ChatInput,
-    db: Session = Depends(get_db),
-    comfy_ui: ComfyUIService = Depends(get_comfy_ui_service),
-    lm_client: LMStudioClient = Depends(get_lm_client),
-    context_manager: ChatContextManager = Depends(get_context_manager),
-    casual_conversation_handler: CasualConversation = Depends(get_casual_conversation_handler),
-    interaction_manager: InteractionManager = Depends(get_interaction_manager),
-    character_database: CharacterDatabase = Depends(get_character_database),
-    user_manager: UserManager = Depends(get_user_manager)
-):
-    try:
-        # Validate model
-        loaded_models = await lm_client.get_models()
-        if chat_input.model not in [model["id"] for model in loaded_models["data"]]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Model '{chat_input.model}' is not loaded."
-            )
-
-        # Extract user message and context
-        last_message: ChatInputMessage = chat_input.messages[-1]
-        user_message = last_message.content
-
-        # Ensure the default test user exists
-        user = user_manager.get_or_create_test_user(
-            user_id=DEFAULT_TEST_USER_ID,
-            username="Test User",
-            email="testuser@example.com",
-            password="test_password"
-        )
-
-        if not user:
-            raise HTTPException(status_code=500, detail="Failed to create or retrieve test user")
-
-        user_id = user.user_id  # Use the actual user ID from the database
-        logging.info(f"Using user with id: {user_id}")
-
-        context = context_manager.get_context(user_id)
-
-        # Get or create character
-        character_id = chat_input.character_id or character_database.get_or_create_default_character()
-        personalized_chatbot = PersonalizedChatbot(character_id, character_database)
-
-        # Generate response
-        if GENERATE_IMAGE in user_message.lower():
-            return await generate_image(user_message, character_id, comfy_ui)
-        else:
-            generated_response = await generate_chat_response(
-                user_message,
-                context,
-                casual_conversation_handler,
-                personalized_chatbot
-            )
-
-        logging.debug(f"Generated response from generate_chat_response: {generated_response}")
-        logging.debug(f"Generated response type: {type(generated_response)}")
-
-        # Ensure we're always working with the content of the Message
-        if isinstance(generated_response, Message):
-            response_content = generated_response.content
-            response_role = generated_response.role
-        else:
-            response_content = str(generated_response)
-            response_role = "assistant"
-
-        # Create a MessageRead object
-        message_read = MessageRead(
-            id=str(uuid.uuid4()),
-            role=response_role,
-            content=response_content,
-            user_id=user_id,
-            timestamp=time.time(),
-            relevance=1.0
-        )
-        logging.debug(f"Created MessageRead object: {message_read}")
-        logging.debug(f"MessageRead content type: {type(message_read.content)}")
-
-        # Update context and record interaction
-        context_manager.update_context(user_id, [message_read])
-        interaction_manager.create_interaction(user_id, character_id, "chat_completion")
-
-        # Get adaptive traits
-        character = character_database.get_character_by_id(character_id)
-        adaptive_traits = character.personality_traits if character else None
-
-        formatted_response = format_chat_response(chat_input.model, message_read.content, adaptive_traits)
-        logging.debug(f"Formatted response: {formatted_response}")
-        return formatted_response
-
-    except Exception as e:
-        logging.error(f"API call failed: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-async def generate_image(user_message: str, character_id: int, comfy_ui: ComfyUIService) -> ImageGenerationResponse:
-    image_request = ImageGenerationRequest(prompt=extract_image_prompt(user_message), character_id=character_id)
+async def generate_image_response(image_request: ImageGenerationRequest, comfy_ui: ComfyUIService) -> ImageGenerationResponse:
     try:
         prompt_id = await comfy_ui.generate_image(image_request.prompt)
         return ImageGenerationResponse(
@@ -201,3 +107,94 @@ async def get_adaptive_traits(
     except Exception as e:
         logging.error(f"Failed to get adaptive traits: {str(e)}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to get adaptive traits")
+    
+@router.post("/completions", response_model=Dict[str, Any])
+async def chat_endpoint(
+    chat_input: ChatInput,
+    db: Session = Depends(get_db),
+    comfy_ui: ComfyUIService = Depends(get_comfy_ui_service),
+    lm_client: LMStudioClient = Depends(get_lm_client),
+    context_manager: ChatContextManager = Depends(get_context_manager),
+    casual_conversation_handler: CasualConversation = Depends(get_casual_conversation_handler),
+    interaction_manager: InteractionManager = Depends(get_interaction_manager),
+    character_database: CharacterDatabase = Depends(get_character_database),
+    user_manager: UserManager = Depends(get_user_manager)
+):
+    try:
+        # Validate model
+        loaded_models = await lm_client.get_models()
+        if chat_input.model not in [model["id"] for model in loaded_models["data"]]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Model '{chat_input.model}' is not loaded."
+            )
+
+        # Extract user message and context
+        last_message: ChatInputMessage = chat_input.messages[-1]
+        user_message = last_message.content
+
+        # Ensure the default test user exists
+        user = user_manager.get_or_create_test_user(
+            user_id=settings.DEFAULT_TEST_USER_ID,
+            username="Test User",
+            email="testuser@example.com",
+            password="test_password"
+        )
+
+        if not user:
+            raise HTTPException(status_code=500, detail="Failed to create or retrieve test user")
+
+        user_id = user.user_id
+        context = context_manager.get_context(user_id)
+
+        # Get or create character
+        character_id = chat_input.character_id or character_database.get_or_create_default_character()
+        personalized_chatbot = PersonalizedChatbot(character_id, character_database)
+
+        # Generate response
+        if GENERATE_IMAGE in user_message.lower():
+            image_request = ImageGenerationRequest(prompt=extract_image_prompt(user_message), character_id=character_id)
+            response = await generate_image_response(image_request, comfy_ui)
+        else:
+            generated_response = await generate_chat_response(
+                user_message,
+                context,
+                casual_conversation_handler,
+                personalized_chatbot
+            )
+
+            message_read = MessageRead(
+                id=str(uuid.uuid4()),
+                role="assistant",
+                content=generated_response,
+                user_id=user_id,
+                timestamp=time.time(),
+                relevance=1.0
+            )
+
+            context_manager.update_context(user_id, [message_read])
+            interaction_manager.create_interaction(user_id, character_id, "chat_completion")
+
+            # Get adaptive traits
+            character = character_database.get_character_by_id(character_id)
+            adaptive_traits = character.personality_traits if character else None
+
+            response = format_chat_response(chat_input.model, message_read.content, adaptive_traits)
+
+        return response
+
+    except ValidationError as e:
+        logging.error(f"Invalid request: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except CharacterDatabaseException as e:
+        logging.error(f"Error retrieving character: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error retrieving character")
+    except LMStudioException as e:
+        logging.error(f"Error from LM Studio: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error generating response")
+    except ComfyUIException as e:
+        logging.error(f"Error from ComfyUI: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error generating image")
+    except Exception as e:
+        logging.error(f"Unexpected error: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred")

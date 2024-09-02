@@ -59,7 +59,7 @@ class Settings(BaseSettings):
         if os.getenv("RUNNING_IN_DOCKER") == "true":
             return os.getenv("DATABASE_URL_DOCKER", "")
         else:
-            return os.getenv("DATABASE_URL", f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@localhost:3320/{self.MYSQL_DB}")
+            return os.getenv("DATABASE_URL", f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@{self.MYSQL_HOSTNAME}:{self.MYSQL_PORT}/{self.MYSQL_DB}")
 
     @property
     def CURRENT_API_BASE_URL(self) -> str:
